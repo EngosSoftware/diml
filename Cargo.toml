@@ -1,0 +1,11 @@
+[package]
+name = "diml"
+version = "0.0.0"
+authors = ["Dariusz Depta <depta@engos.de>"]
+description = "Delimited Indentation Meld Language"
+documentation = "https://docs.rs/diml"
+repository = "https://github.com/EngosSoftware/diml.git"
+keywords = ["delimited", "indentation", "meld", "language"]
+categories = ["encoding"]
+license = "MIT OR Apache-2.0"
+edition = "2024"
