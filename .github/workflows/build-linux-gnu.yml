@@ -1,21 +1,18 @@
-# Linux x86_64
-
-name: Linux
+name: build GNU/Linux
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-      - releases/**
-
-env:
-  CARGO_TERM_COLOR: always
+      - release/*
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-gnu
