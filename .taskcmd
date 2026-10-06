@@ -25,7 +25,7 @@
   .cov-badge
     .desc Generates the detailed code coverage badge
     .cmd cargo +stable llvm-cov clean
-    .cmd cargo +stable llvm-cov --no-cfg-coverage --json --summary-only | coverio --collapse --tag cov-badge-idml
+    .cmd cargo +stable llvm-cov --no-cfg-coverage --json --summary-only | coverio --collapse --tag cov-badge
 
   .doc
     .desc Generates documentation
