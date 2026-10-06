@@ -11,6 +11,7 @@ mod parser;
 mod tokenizer;
 
 pub use defs::{NULL, TAB, WS};
+pub use errors::{DimlError, Result};
 pub use node::Node;
 pub use parser::{Parser, parse};
 pub use tokenizer::{Token, Tokenizer, tokenize};

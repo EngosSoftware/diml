@@ -1,9 +1,10 @@
-use super::EXAMPLE_BASIC;
 use diml::parse;
+
+const BASIC_EXAMPLE: &str = include_str!("basic.diml");
 
 #[test]
 fn _0001() {
-  let input = EXAMPLE_BASIC;
+  let input = BASIC_EXAMPLE;
   let root = parse(input).unwrap();
   assert_eq!(6, root.children().count());
   let names = root.children().map(|node| node.name()).collect::<Vec<&str>>();
