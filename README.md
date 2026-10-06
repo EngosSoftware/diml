@@ -41,7 +41,7 @@
 
 ## Overview
 
-Delimiter-Indented Markup Language (DIML) parser.
+Parser for **Delimiter-Indented Markup Language** (DIML).
 
 Delimiter-Indented Markup Language (DIML) is a minimal, line-based markup language
 for writing hierarchical text.
