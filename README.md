@@ -37,9 +37,7 @@
 [es-url]: https://engos.de
 [repository-url]: https://github.com/EngosSoftware/diml
 
-# Delimiter-Indented Markup Language
-
-**Parser for Delimiter-Indented Markup Language (DIML)**
+# Delimiter-Indented Markup Language (DIML) parser
 
 ## Overview
 
