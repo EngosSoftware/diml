@@ -9,6 +9,7 @@ keywords = ["delimiter", "indented", "markup", "language", "parser"]
 categories = ["encoding"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
+rust-version = "1.87.0"
 include = [
     "docs/**",
     "src/**",
