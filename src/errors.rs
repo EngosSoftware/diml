@@ -1,5 +1,7 @@
 //! # Errors implementation
 
+use std::fmt::Display;
+
 /// Common result type.
 pub type Result<T, E = DimlError> = std::result::Result<T, E>;
 
@@ -9,7 +11,7 @@ pub struct DimlError(String);
 
 impl std::error::Error for DimlError {}
 
-impl std::fmt::Display for DimlError {
+impl Display for DimlError {
   /// Implementation of [Display] trait for [DimlError].
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", self.0)

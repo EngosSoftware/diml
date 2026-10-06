@@ -1,5 +1,4 @@
-//! # Parser for Delimiter-Indented Markup Language
-
+#![doc = include_str!("../docs/README.md")]
 #![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(rustdoc::missing_crate_level_docs)]
