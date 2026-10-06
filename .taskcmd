@@ -1,0 +1,60 @@
+.tasks
+
+  .build
+    .desc Builds in debug mode
+    .cmd cargo +stable build
+
+  .clean
+    .desc Cleans all targets
+    .cmd cargo +stable clean
+
+  .clippy
+    .desc Runs clippy for all targets
+    .cmd cargo +stable clippy --all-targets
+
+  .cov
+    .desc Generates code coverage report in text format
+    .cmd cargo +stable llvm-cov clean
+    .cmd cargo +stable llvm-cov --no-cfg-coverage
+
+  .cov-html
+    .desc Generates code coverage report in HTML format
+    .cmd cargo +stable llvm-cov clean
+    .cmd cargo +stable llvm-cov --no-cfg-coverage --html --open
+
+  .cov-badge
+    .desc Generates the detailed code coverage badge
+    .cmd cargo +stable llvm-cov clean
+    .cmd cargo +stable llvm-cov --no-cfg-coverage --json --summary-only | coverio --collapse --tag cov-badge-idml
+
+  .doc
+    .desc Generates documentation
+    .cmd cargo +stable doc --no-deps
+
+  .doc-open
+    .desc Generates documentation and opens it in browser
+    .cmd cargo +stable doc --no-deps --open
+
+  .doc-priv
+    .desc Generates documentation with private items
+    .cmd cargo +stable doc --no-deps --document-private-items
+
+  .doc-priv-open
+    .desc Generates documentation with private items and opens it in browser
+    .cmd cargo +stable doc --no-deps --open --document-private-items
+
+  .fmt
+    .desc Runs the code formatter
+    .cmd cargo +nightly fmt
+
+  .musl
+    .desc Builds in debug mode
+    .cmd cargo +stable build --release --target=x86_64-unknown-linux-musl
+
+  .test
+    .desc Runs tests in debug mode
+    .cmd cargo +stable test
+
+  .testn
+    .desc Runs tests in debug mode using nextest
+    .cmd cargo +stable nextest run --no-fail-fast

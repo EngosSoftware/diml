@@ -1,0 +1,25 @@
+# Apple macOS x86_64
+
+name: macOs
+
+on:
+  push:
+    branches:
+      - main
+      - release/**
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+      - run: cargo clippy --all-targets
+      - run: cargo test
+      - run: cargo build --release --target=x86_64-apple-darwin

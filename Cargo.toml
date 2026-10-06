@@ -2,10 +2,20 @@
 name = "diml"
 version = "0.0.0"
 authors = ["Dariusz Depta <depta@engos.de>"]
-description = "Delimited Indentation Meld Language"
+description = "Delimiter-Indented Markup Language"
 documentation = "https://docs.rs/diml"
 repository = "https://github.com/EngosSoftware/diml.git"
-keywords = ["delimited", "indentation", "meld", "language"]
+keywords = ["delimiter", "indented", "markup", "language"]
 categories = ["encoding"]
-license = "MIT OR Apache-2.0"
 edition = "2024"
+license = "MIT OR Apache-2.0"
+include = [
+    "docs/**",
+    "src/**",
+    "tests/**",
+    "Cargo.lock",
+    "Cargo.toml",
+    "LICENSE*",
+    "NOTICE",
+    "/README.md"
+]
