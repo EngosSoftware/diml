@@ -4,4 +4,13 @@ version = 4
 
 [[package]]
 name = "diml"
-version = "0.0.0"
+version = "0.1.0"
+dependencies = [
+ "normalized-line-endings",
+]
+
+[[package]]
+name = "normalized-line-endings"
+version = "1.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ec1c9b208b243df153ffa70a7212704a421c77927c37fb871e699b28d696088"

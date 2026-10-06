@@ -41,9 +41,7 @@
 
 ## Overview
 
-Parser for Delimiter-Indented Markup Language (DIML).
-
-WORK IN PROGRESS
+Delimiter-Indented Markup Language (DIML) parser.
 
 ## License
 

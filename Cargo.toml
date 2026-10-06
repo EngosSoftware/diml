@@ -1,11 +1,11 @@
 [package]
 name = "diml"
-version = "0.0.0"
+version = "0.1.0"
 authors = ["Dariusz Depta <depta@engos.de>"]
-description = "Delimiter-Indented Markup Language"
+description = "Delimiter-Indented Markup Language (DIML) parser"
 documentation = "https://docs.rs/diml"
 repository = "https://github.com/EngosSoftware/diml.git"
-keywords = ["delimiter", "indented", "markup", "language"]
+keywords = ["delimiter", "indented", "markup", "language", "parser"]
 categories = ["encoding"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
@@ -19,3 +19,6 @@ include = [
     "NOTICE",
     "/README.md"
 ]
+
+[dependencies]
+normalized-line-endings = "1.0.14"

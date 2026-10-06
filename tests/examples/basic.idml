@@ -1,0 +1,26 @@
+.comment A sample idML file
+.company Engos Software
+.domains
+    . business analysts
+    . software developers
+    . data engineers
+    . devops
+.tutorial
+    .idML
+        .name Indented Delimiter Markup Language
+        .type Brilliant!
+        .born 2025
+    .yaml
+        .name YAML Ain't Markup Language
+        .type Awesome!
+        .born 2001
+    .json:
+        .name JavaScript Object Notation
+        .type Great!
+        .born 2001
+    .xml:
+        .name Extensible Markup Language
+        .type Good!
+        .born 1998
+.author Dariusz Depta
+.published true
