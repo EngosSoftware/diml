@@ -1,8 +1,8 @@
 # Delimiter-Indented Markup Language
 
-## Overview
+**Parser for Delimiter-Indented Markup Language (DIML)**
 
-Parser for **Delimiter-Indented Markup Language** (DIML).
+## Overview
 
 Delimiter-Indented Markup Language (DIML) is a minimal, line-based markup language
 for writing hierarchical text.
@@ -15,5 +15,4 @@ The document itself sets the rules:
 - and its first indentation sets the indentation unit.
 
 There are no closing tags, no quoting and no escaping.
-
 Free-form content runs until the next node.
