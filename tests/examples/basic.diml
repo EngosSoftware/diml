@@ -1,4 +1,4 @@
-.comment A sample idML file
+.comment A sample DIML file
 .company Engos Software
 .domains
     . business analysts
@@ -6,8 +6,8 @@
     . data engineers
     . devops
 .tutorial
-    .idML
-        .name Indented Delimiter Markup Language
+    .diml
+        .name Delimiter-Indented Markup Language
         .type Brilliant!
         .born 2025
     .yaml

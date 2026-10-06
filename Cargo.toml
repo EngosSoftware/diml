@@ -1,6 +1,6 @@
 [package]
 name = "diml"
-version = "0.0.0"
+version = "0.1.0"
 authors = ["Dariusz Depta <depta@engos.de>"]
 description = "Delimiter-Indented Markup Language (DIML) parser"
 documentation = "https://docs.rs/diml"
