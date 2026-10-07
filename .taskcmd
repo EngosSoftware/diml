@@ -18,7 +18,7 @@
   .cov
     .desc Generates code coverage report in text format
     .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov clean
-    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov --no-cfg-coverage
+    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov --no-cfg-coverage --ignore-filename-regex 'test_parser.rs'
 
   .cov-html
     .desc Generates code coverage report in HTML format

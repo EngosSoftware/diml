@@ -1,4 +1,4 @@
-use diml::{TAB, WS, parse};
+use diml::parse;
 
 #[test]
 fn _0001() {
@@ -217,14 +217,14 @@ fn _0016() {
 fn _0017() {
   let input = ".A\r";
   let root = parse(input).unwrap();
-  assert_eq!(input, root.document(4, WS));
+  assert_eq!(input, root.document(4, ' '));
 }
 
 #[test]
 fn _0018() {
   let input = ".A\r\n";
   let root = parse(input).unwrap();
-  assert_eq!(input, root.document(4, WS));
+  assert_eq!(input, root.document(4, ' '));
 }
 
 #[test]
@@ -234,7 +234,7 @@ fn _0019() {
     .C
 "#;
   let root = parse(input).unwrap();
-  assert_eq!(input, root.document(4, WS));
+  assert_eq!(input, root.document(4, ' '));
 }
 
 #[test]
@@ -247,21 +247,21 @@ fn _0020() {
     .C
 "#;
   let root = parse(input).unwrap();
-  assert_eq!(input, root.document(4, WS));
+  assert_eq!(input, root.document(4, ' '));
 }
 
 #[test]
 fn _0021() {
   let input = ".A\n\t.B\n\t.C\n";
   let root = parse(input).unwrap();
-  assert_eq!(input, root.document(1, TAB));
+  assert_eq!(input, root.document(1, '\t'));
 }
 
 #[test]
 fn _0022() {
   let input = ".A\n\t\t.B\n\t\t.C\n";
   let root = parse(input).unwrap();
-  assert_eq!(input, root.document(2, TAB));
+  assert_eq!(input, root.document(2, '\t'));
 }
 
 #[test]

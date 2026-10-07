@@ -1,4 +1,4 @@
-use diml::{Parser, Token, WS, parse};
+use diml::{Parser, Token, parse};
 
 #[test]
 fn _0001() {
@@ -140,13 +140,13 @@ fn _0017() {
 #[test]
 fn _0018() {
   // No node name token.
-  let tokens = vec![Token::Indentation(0, WS), Token::NodeContent("content".to_string())];
+  let tokens = vec![Token::Indentation(0, ' '), Token::NodeContent("content".to_string())];
   assert_eq!("expected node name token", Parser::new(tokens).parse().unwrap_err().to_string())
 }
 
 #[test]
 fn _0019() {
   // No node content token.
-  let tokens = vec![Token::Indentation(0, WS), Token::NodeName("name".to_string(), '.'), Token::Indentation(0, WS)];
+  let tokens = vec![Token::Indentation(0, ' '), Token::NodeName("name".to_string(), '.'), Token::Indentation(0, ' ')];
   assert_eq!("expected node content token", Parser::new(tokens).parse().unwrap_err().to_string())
 }
