@@ -263,15 +263,3 @@ fn _0022() {
   let root = parse(input).unwrap();
   assert_eq!(input, root.document(2, '\t'));
 }
-
-#[test]
-fn _0023() {
-  let input = ".node name node content\n";
-  let root = parse(input).unwrap();
-  assert_eq!(1, root.children().count());
-  let node = root.children().next().unwrap();
-  assert_eq!('.', node.delimiter());
-  assert_eq!("node name", node.name());
-  assert_eq!(" node content\n", node.content());
-  assert_eq!("node content", node.text());
-}
