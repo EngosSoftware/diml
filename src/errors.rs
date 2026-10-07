@@ -66,3 +66,8 @@ pub fn err_malformed_indentation(indent: usize, multiplier: usize) -> DimlError 
 pub fn err_inconsistent_indentation() -> DimlError {
   DimlError::new("inconsistent indentation, mixed spaces and tabs")
 }
+
+/// Reports skipped indentation level.
+pub fn err_skipped_indentation_level(previous_level: usize, level: usize) -> DimlError {
+  DimlError::new(&format!("skipped indentation level, jump from level {previous_level} to level {level}"))
+}

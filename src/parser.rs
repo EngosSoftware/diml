@@ -119,6 +119,10 @@ impl Parser {
       return Err(err_inconsistent_indentation());
     }
     let level = indent.checked_div(multiplier).unwrap_or(0) + 1;
+    let previous_level = self.nodes.last().map_or(0, |node| node.level());
+    if level > previous_level + 1 {
+      return Err(err_skipped_indentation_level(previous_level, level));
+    }
     let node = Node::new(level, delimiter, name, content);
     self.nodes.push(node);
     Ok(())

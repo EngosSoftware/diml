@@ -156,3 +156,27 @@ fn _0020() {
   let input = ".node\u{A0}name content\n";
   assert_eq!(r#"unexpected character: '\u{a0}' at row 1 and column 6"#, parse(input).unwrap_err().to_string());
 }
+
+#[test]
+fn _0021() {
+  // Skipped indentation level when nesting.
+  let input = ".A\n  .B\n      .C\n";
+  assert_eq!("skipped indentation level, jump from level 2 to level 4", parse(input).unwrap_err().to_string());
+}
+
+#[test]
+fn _0022() {
+  // Skipped indentation level after continuation in a lower level.
+  let input = ".A\n  .B\n.C\n    .D\n";
+  assert_eq!("skipped indentation level, jump from level 1 to level 3", parse(input).unwrap_err().to_string());
+}
+
+#[test]
+fn _0023() {
+  // Skipped indentation level in the first node.
+  let tokens = vec![Token::Indentation(4, ' '), Token::NodeName("A".to_string(), '.'), Token::NodeContent("\n".to_string())];
+  assert_eq!(
+    "skipped indentation level, jump from level 0 to level 2",
+    Parser::new(tokens).parse().unwrap_err().to_string()
+  )
+}
