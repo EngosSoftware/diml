@@ -237,7 +237,7 @@ impl<'a> Tokenizer<'a> {
     self.tokens.push(Token::NodeContent(take(&mut self.node_content)));
   }
 
-  /// Returns `true` when the specified character is an allowed delimiter.
+  /// Returns `true` when the specified character is allowed as a delimiter or in a node name.
   fn is_allowed_char(&self, ch: char) -> bool {
     !(ch.is_control() || ch.is_whitespace())
   }
