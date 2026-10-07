@@ -15,7 +15,7 @@
 
 [crates-badge]: https://img.shields.io/crates/v/diml.svg
 [crates-url]: https://crates.io/crates/diml
-[cov-badge]: https://img.shields.io/badge/coverage-0%25-21b577.svg
+[cov-badge]: https://img.shields.io/badge/cov-100%25-21b577.svg
 [cov-url]: https://crates.io/crates/coverio
 [build-badge-linux-gnu]: https://github.com/EngosSoftware/diml/actions/workflows/build-linux-gnu.yml/badge.svg
 [build-badge-linux-musl]: https://github.com/EngosSoftware/diml/actions/workflows/build-linux-musl.yml/badge.svg
