@@ -37,7 +37,7 @@ pub fn err_unexpected_character(ch: char, row: usize, col: usize) -> DimlError {
   DimlError::new(&format!("unexpected character '{}', at row {row} and column {col}", ch.escape_debug()))
 }
 
-/// Reports an unexpected end of input.
+/// Reports a missing newline at the end of the last line.
 pub fn err_missing_final_newline(row: usize, col: usize) -> DimlError {
   DimlError::new(&format!("missing newline at the end of input, at row {row} and column {col}"))
 }
