@@ -53,6 +53,7 @@ The document itself sets the rules:
 
 There are no closing tags, no quoting and no escaping.
 Free-form content runs until the next node.
+Every line, including the last one, must end with a newline.
 
 ## License
 

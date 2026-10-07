@@ -50,7 +50,7 @@ fn _0007() {
   for ch in '\u{0001}'..='\u{0019}' {
     if !matches!(ch, '\n' | '\r' | '\t') {
       let input = format!(".{}", ch);
-      let expected = format!("unexpected character '{}', at row 1 and column 2", ch.escape_unicode());
+      let expected = format!("unexpected character '{}', at row 1 and column 2", ch.escape_debug());
       assert_eq!(expected, parse(&input).unwrap_err().to_string());
     }
   }
@@ -179,4 +179,18 @@ fn _0023() {
     "skipped indentation level, jump from level 0 to level 2",
     Parser::new(tokens).parse().unwrap_err().to_string()
   )
+}
+
+#[test]
+fn _0024() {
+  // No newline after the content of the last node.
+  let input = ".A\n  .B content";
+  assert_eq!("missing newline at the end of input, at row 2 and column 13", parse(input).unwrap_err().to_string());
+}
+
+#[test]
+fn _0025() {
+  // No newline after the last node, with CRLF line endings.
+  let input = ".A\r\n.B";
+  assert_eq!("missing newline at the end of input, at row 2 and column 3", parse(input).unwrap_err().to_string());
 }
