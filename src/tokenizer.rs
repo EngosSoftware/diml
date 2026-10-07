@@ -105,7 +105,7 @@ impl<'a> Tokenizer<'a> {
           // Process the beginning of the document.
           match self.current_char {
             NULL => return Err(err_empty_input()),
-            ch if self.is_allowed_char(ch) => {
+            ch if self.is_allowed_delimiter(ch) => {
               self.delimiter = ch;
               self.tokens.push(Token::Indentation(0, NULL));
               self.state = TokenizerState::NodeName;
@@ -168,7 +168,7 @@ impl<'a> Tokenizer<'a> {
               self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
               self.state = TokenizerState::NewLine;
             }
-            ch if self.is_allowed_char(ch) => {
+            ch if self.is_allowed_name_char(ch) => {
               self.node_name.push(self.current_char);
             }
             other => {
@@ -237,9 +237,14 @@ impl<'a> Tokenizer<'a> {
     self.tokens.push(Token::NodeContent(take(&mut self.node_content)));
   }
 
-  /// Returns `true` when the specified character is allowed character.
-  fn is_allowed_char(&self, ch: char) -> bool {
-    matches!(ch, '\u{0021}'..='\u{10FFFF}')
+  /// Returns `true` when the specified character is an allowed delimiter.
+  fn is_allowed_delimiter(&self, ch: char) -> bool {
+    !(ch.is_control() || ch.is_whitespace())
+  }
+
+  /// Returns `true` when the specified character is an allowed node name character.
+  fn is_allowed_name_char(&self, ch: char) -> bool {
+    !(ch.is_control() || ch.is_whitespace()) || ch == '\u{00A0}'
   }
 
   /// Returns `true` when the specified character is equal to recognized delimiter.
