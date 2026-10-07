@@ -1,18 +1,17 @@
 //! # Errors implementation
 
+use std::error::Error;
 use std::fmt::Display;
 
-/// Common result type.
+/// Result type for [DimlError].
 pub type Result<T, E = DimlError> = std::result::Result<T, E>;
 
 /// Error definition.
 #[derive(Debug, PartialEq, Eq)]
 pub struct DimlError(String);
 
-impl std::error::Error for DimlError {}
-
 impl Display for DimlError {
-  /// Implementation of [Display] trait for [DimlError].
+  /// Implements [Display] trait for [DimlError].
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", self.0)
   }
@@ -24,6 +23,9 @@ impl DimlError {
     Self(message.to_string())
   }
 }
+
+/// Implements [Error] trait for [DimlError].
+impl Error for DimlError {}
 
 /// Reports an empty input.
 pub fn err_empty_input() -> DimlError {

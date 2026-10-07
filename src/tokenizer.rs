@@ -2,7 +2,7 @@
 
 use crate::defs::*;
 use crate::errors::*;
-use normalized_line_endings::{Annotated, AnnotatedChar, LineEnding, LF};
+use normalized_line_endings::{Annotated, AnnotatedChar, LF, LineEnding};
 
 /// Tokenizes input text.
 pub fn tokenize(input: &str) -> Result<Vec<Token>> {

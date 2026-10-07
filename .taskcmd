@@ -1,60 +1,63 @@
+.vars
+  .RUST_TOOLCHAIN +stable
+
 .tasks
 
   .build
     .desc Builds in debug mode
-    .cmd cargo +stable build
+    .cmd cargo {{RUST_TOOLCHAIN}} build
 
   .clean
     .desc Cleans all targets
-    .cmd cargo +stable clean
+    .cmd cargo {{RUST_TOOLCHAIN}} clean
 
   .clippy
     .desc Runs clippy for all targets
-    .cmd cargo +stable clippy --all-targets
+    .cmd cargo {{RUST_TOOLCHAIN}} clippy --all-targets
 
   .cov
     .desc Generates code coverage report in text format
-    .cmd cargo +stable llvm-cov clean
-    .cmd cargo +stable llvm-cov --no-cfg-coverage
+    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov clean
+    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov --no-cfg-coverage
 
   .cov-html
     .desc Generates code coverage report in HTML format
-    .cmd cargo +stable llvm-cov clean
-    .cmd cargo +stable llvm-cov --no-cfg-coverage --html --open
+    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov clean
+    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov --no-cfg-coverage --html --open
 
   .cov-badge
     .desc Generates the detailed code coverage badge
-    .cmd cargo +stable llvm-cov clean
-    .cmd cargo +stable llvm-cov --no-cfg-coverage --json --summary-only | coverio --collapse --tag cov-badge
+    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov clean
+    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov --no-cfg-coverage --json --summary-only | coverio --collapse --tag cov-badge
 
   .doc
     .desc Generates documentation
-    .cmd cargo +stable doc --no-deps
+    .cmd cargo {{RUST_TOOLCHAIN}} doc --no-deps
 
   .doc-open
     .desc Generates documentation and opens it in browser
-    .cmd cargo +stable doc --no-deps --open
+    .cmd cargo {{RUST_TOOLCHAIN}} doc --no-deps --open
 
   .doc-priv
     .desc Generates documentation with private items
-    .cmd cargo +stable doc --no-deps --document-private-items
+    .cmd cargo {{RUST_TOOLCHAIN}} doc --no-deps --document-private-items
 
   .doc-priv-open
     .desc Generates documentation with private items and opens it in browser
-    .cmd cargo +stable doc --no-deps --open --document-private-items
+    .cmd cargo {{RUST_TOOLCHAIN}} doc --no-deps --open --document-private-items
 
   .fmt
     .desc Runs the code formatter
-    .cmd cargo +nightly fmt
+    .cmd cargo {{RUST_TOOLCHAIN}} fmt
 
   .musl
     .desc Builds in debug mode
-    .cmd cargo +stable build --release --target=x86_64-unknown-linux-musl
+    .cmd cargo {{RUST_TOOLCHAIN}} build --release --target=x86_64-unknown-linux-musl
 
   .test
     .desc Runs tests in debug mode
-    .cmd cargo +stable test
+    .cmd cargo {{RUST_TOOLCHAIN}} test
 
   .testn
     .desc Runs tests in debug mode using nextest
-    .cmd cargo +stable nextest run --no-fail-fast
+    .cmd cargo {{RUST_TOOLCHAIN}} nextest run --no-fail-fast
