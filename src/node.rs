@@ -3,11 +3,6 @@
 use crate::defs::*;
 use std::fmt::Write;
 
-const ROOT_LEVEL: usize = 0;
-const ROOT_DELIMITER: char = NULL;
-const ROOT_NAME: &str = "root";
-const ROOT_CONTENT: &str = "";
-
 /// Tree node.
 #[derive(Debug, Clone)]
 pub struct Node {
@@ -32,17 +27,17 @@ impl Node {
   /// Creates a root node.
   pub(crate) fn root() -> Self {
     Self {
-      level: ROOT_LEVEL,
-      delimiter: ROOT_DELIMITER,
-      name: ROOT_NAME.to_string(),
-      content: ROOT_CONTENT.to_string(),
+      level: 0,
+      delimiter: NULL,
+      name: "root".to_string(),
+      content: "".to_string(),
       children: vec![],
     }
   }
 
   /// Returns `true` when node is a root.
   pub(crate) fn is_root(&self) -> bool {
-    self.level == ROOT_LEVEL && self.delimiter == ROOT_DELIMITER && self.name == ROOT_NAME && self.content == ROOT_CONTENT
+    self.level == 0
   }
 
   /// Creates a new node.
