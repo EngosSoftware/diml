@@ -3,6 +3,13 @@
 
 .tasks
 
+  .all
+    .task clean
+    .task build
+    .task clippy
+    .task test
+    .task cov
+
   .build
     .desc Builds in debug mode
     .cmd cargo {{RUST_TOOLCHAIN}} build

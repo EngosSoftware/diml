@@ -4,6 +4,7 @@ use crate::Node;
 use crate::defs::*;
 use crate::errors::*;
 use crate::tokenizer::{Token, tokenize};
+use std::mem::take;
 use std::vec::IntoIter;
 
 /// Parses input text.
@@ -80,9 +81,9 @@ impl Parser {
         }
         ParserState::NodeContent => {
           if let Token::NodeContent(content) = token {
-            self.create_node(self.last_indent, self.last_indent_char, self.last_delimiter, self.last_name.clone(), content)?;
+            let last_name = take(&mut self.last_name);
+            self.create_node(self.last_indent, self.last_indent_char, self.last_delimiter, last_name, content)?;
             self.last_indent = 0;
-            self.last_name = "".to_string();
             self.last_delimiter = NULL;
             self.state = ParserState::Indentation;
           } else {
