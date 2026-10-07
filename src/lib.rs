@@ -12,4 +12,9 @@ mod tokenizer;
 pub use errors::{DimlError, Result};
 pub use node::Node;
 pub use parser::{Parser, parse};
-pub use tokenizer::{Token, Tokenizer, tokenize};
+
+/// Internal building blocks, not part of the stable API.
+#[doc(hidden)]
+pub mod internal {
+  pub use crate::tokenizer::{Token, Tokenizer, tokenize};
+}

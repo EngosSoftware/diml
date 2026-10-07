@@ -1,4 +1,5 @@
-use diml::{Parser, Token, parse};
+use diml::internal::Token;
+use diml::{Parser, parse};
 
 #[test]
 fn _0001() {
