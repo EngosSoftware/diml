@@ -128,12 +128,8 @@ impl<'a> Tokenizer<'a> {
               self.tokens.push(Token::Indentation(0, NULL));
               self.state = TokenizerState::NodeName;
             }
-            WS => {
-              self.indentation.push(WS);
-              self.state = TokenizerState::Indentation;
-            }
-            TAB => {
-              self.indentation.push(TAB);
+            ch if self.is_whitespace(ch) => {
+              self.indentation.push(ch);
               self.state = TokenizerState::Indentation;
             }
             LF => {
@@ -183,15 +179,16 @@ impl<'a> Tokenizer<'a> {
             ch if self.is_delimiter(ch) => {
               self.consume_node_content();
               self.consume_indentation()?;
-              self.state = TokenizerState::NodeName
+              self.state = TokenizerState::NodeName;
             }
-            WS => self.indentation.push(WS),
-            TAB => self.indentation.push(TAB),
+            ch if self.is_whitespace(ch) => {
+              self.indentation.push(ch);
+            }
             ch => {
               self.node_content.push_str(&self.indentation);
               self.node_content.push(ch);
               self.indentation.clear();
-              self.state = TokenizerState::NodeContent
+              self.state = TokenizerState::NodeContent;
             }
           }
         }
@@ -245,6 +242,11 @@ impl<'a> Tokenizer<'a> {
   /// Returns `true` when the specified character is equal to recognized delimiter.
   fn is_delimiter(&self, ch: char) -> bool {
     ch == self.delimiter
+  }
+
+  /// Returns `true` when the specified character is a whitespace but not a new line character.
+  fn is_whitespace(&self, ch: char) -> bool {
+    ch.is_whitespace() && !matches!(ch, '\r' | '\n')
   }
 
   /// Advances the counter to the next row.
