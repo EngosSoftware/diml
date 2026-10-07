@@ -3,6 +3,7 @@
 use crate::defs::*;
 use crate::errors::*;
 use normalized_line_endings::{Annotated, AnnotatedChar, LF, LineEnding};
+use std::mem::take;
 
 /// Tokenizes input text.
 pub fn tokenize(input: &str) -> Result<Vec<Token>> {
@@ -208,7 +209,7 @@ impl<'a> Tokenizer<'a> {
         }
       }
     }
-    Ok(self.tokens.clone())
+    Ok(self.tokens)
   }
 
   /// Consumes the indentation.
@@ -228,14 +229,12 @@ impl<'a> Tokenizer<'a> {
 
   /// Consumes the node name.
   fn consume_node_name(&mut self) {
-    self.tokens.push(Token::NodeName(self.node_name.clone(), self.delimiter));
-    self.node_name.clear();
+    self.tokens.push(Token::NodeName(take(&mut self.node_name), self.delimiter));
   }
 
   /// Consumes the node content.
   fn consume_node_content(&mut self) {
-    self.tokens.push(Token::NodeContent(self.node_content.clone()));
-    self.node_content.clear();
+    self.tokens.push(Token::NodeContent(take(&mut self.node_content)));
   }
 
   /// Returns `true` when the specified character is allowed character.
