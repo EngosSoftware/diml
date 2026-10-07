@@ -18,7 +18,7 @@ pub enum Token {
   /// Node content token.
   NodeContent(String),
   /// Indentation token with indentation character.
-  Indentation(usize, char),
+  Indentation(usize),
 }
 
 /// Tokenizer state.
@@ -107,7 +107,7 @@ impl<'a> Tokenizer<'a> {
             NULL => return Err(err_empty_input()),
             ch if self.is_allowed_char(ch) => {
               self.delimiter = ch;
-              self.tokens.push(Token::Indentation(0, NULL));
+              self.tokens.push(Token::Indentation(0));
               self.state = TokenizerState::NodeName;
             }
             other => {
@@ -125,7 +125,7 @@ impl<'a> Tokenizer<'a> {
             }
             ch if self.is_delimiter(ch) => {
               self.consume_node_content();
-              self.tokens.push(Token::Indentation(0, NULL));
+              self.tokens.push(Token::Indentation(0));
               self.state = TokenizerState::NodeName;
             }
             ch if self.is_whitespace(ch) => {
@@ -212,11 +212,7 @@ impl<'a> Tokenizer<'a> {
   /// Consumes the indentation.
   fn consume_indentation(&mut self) -> Result<()> {
     if self.indentation.chars().all(|ch| ch == WS) {
-      self.tokens.push(Token::Indentation(self.indentation.len(), WS));
-      self.indentation.clear();
-      Ok(())
-    } else if self.indentation.chars().all(|ch| ch == TAB) {
-      self.tokens.push(Token::Indentation(self.indentation.len(), TAB));
+      self.tokens.push(Token::Indentation(self.indentation.len()));
       self.indentation.clear();
       Ok(())
     } else {

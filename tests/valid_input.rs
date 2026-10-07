@@ -249,17 +249,3 @@ fn _0020() {
   let root = parse(input).unwrap();
   assert_eq!(input, root.document(4, ' '));
 }
-
-#[test]
-fn _0021() {
-  let input = ".A\n\t.B\n\t.C\n";
-  let root = parse(input).unwrap();
-  assert_eq!(input, root.document(1, '\t'));
-}
-
-#[test]
-fn _0022() {
-  let input = ".A\n\t\t.B\n\t\t.C\n";
-  let root = parse(input).unwrap();
-  assert_eq!(input, root.document(2, '\t'));
-}
