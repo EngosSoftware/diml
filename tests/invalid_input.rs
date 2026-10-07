@@ -11,38 +11,38 @@ fn _0001() {
 fn _0002() {
   // Input beginning with space(s) is invalid.
   let input = " ";
-  assert_eq!("unexpected character: ' ' at row 1 and column 1", parse(input).unwrap_err().to_string());
+  assert_eq!("unexpected character ' ', at row 1 and column 1", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0003() {
   // Input beginning with tab(s) is invalid.
   let input = "\t";
-  assert_eq!(r#"unexpected character: '\t' at row 1 and column 1"#, parse(input).unwrap_err().to_string());
+  assert_eq!(r#"unexpected character '\t', at row 1 and column 1"#, parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0004() {
   // Only delimiter present.
   let input = ".";
-  assert_eq!("unexpected end of input", parse(input).unwrap_err().to_string());
+  assert_eq!("missing newline at the end of input, at row 1 and column 2", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0005() {
   // No newline after empty name.
   let input = ". ";
-  assert_eq!("unexpected end of input", parse(input).unwrap_err().to_string());
+  assert_eq!("missing newline at the end of input, at row 1 and column 3", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0006() {
   for ch in '\u{0001}'..='\u{0020}' {
     let input = format!("{}", ch);
-    let expected = format!("unexpected character: '{}' at row 1 and column 1", ch.escape_debug());
+    let expected = format!("unexpected character '{}', at row 1 and column 1", ch.escape_debug());
     assert_eq!(expected, parse(&input).unwrap_err().to_string());
   }
-  assert_eq!(r#"unexpected character: '\r' at row 1 and column 1"#, parse("\r\n").unwrap_err().to_string());
+  assert_eq!(r#"unexpected character '\r', at row 1 and column 1"#, parse("\r\n").unwrap_err().to_string());
 }
 
 #[test]
@@ -50,7 +50,7 @@ fn _0007() {
   for ch in '\u{0001}'..='\u{0019}' {
     if !matches!(ch, '\n' | '\r' | '\t') {
       let input = format!(".{}", ch);
-      let expected = format!("unexpected character: '{}' at row 1 and column 2", ch.escape_unicode());
+      let expected = format!("unexpected character '{}', at row 1 and column 2", ch.escape_unicode());
       assert_eq!(expected, parse(&input).unwrap_err().to_string());
     }
   }
@@ -60,28 +60,28 @@ fn _0007() {
 fn _0008() {
   // Node name is not followed by a whitespace, newline or both.
   let input = ".A";
-  assert_eq!("unexpected end of input", parse(input).unwrap_err().to_string());
+  assert_eq!("missing newline at the end of input, at row 1 and column 3", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0009() {
   // Node name is not followed by a whitespace and newline.
   let input = ".A ";
-  assert_eq!("unexpected end of input", parse(input).unwrap_err().to_string());
+  assert_eq!("missing newline at the end of input, at row 1 and column 4", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0010() {
   // Root node name must be at the very beginning of the line, without any indentation before like space.
   let input = " .A\n";
-  assert_eq!("unexpected character: ' ' at row 1 and column 1", parse(input).unwrap_err().to_string());
+  assert_eq!("unexpected character ' ', at row 1 and column 1", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0011() {
   // Root node name must be at the very beginning of the line, without any indentation before like horizontal tab.
   let input = "\t.A\n";
-  assert_eq!(r#"unexpected character: '\t' at row 1 and column 1"#, parse(input).unwrap_err().to_string());
+  assert_eq!(r#"unexpected character '\t', at row 1 and column 1"#, parse(input).unwrap_err().to_string());
 }
 
 #[test]
@@ -90,7 +90,7 @@ fn _0012() {
   let input = r#".MODEL
     .NAMESPACE https://decision-toolkit.org/2_0001/
   "#;
-  assert_eq!("unexpected end of input", parse(input).unwrap_err().to_string());
+  assert_eq!("missing newline at the end of input, at row 3 and column 3", parse(input).unwrap_err().to_string());
 }
 
 #[test]
@@ -154,7 +154,7 @@ fn _0019() {
 fn _0020() {
   // Non-breaking space is not allowed in node name.
   let input = ".node\u{A0}name content\n";
-  assert_eq!(r#"unexpected character: '\u{a0}' at row 1 and column 6"#, parse(input).unwrap_err().to_string());
+  assert_eq!(r#"unexpected character '\u{a0}', at row 1 and column 6"#, parse(input).unwrap_err().to_string());
 }
 
 #[test]

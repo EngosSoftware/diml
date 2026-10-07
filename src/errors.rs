@@ -34,12 +34,12 @@ pub fn err_empty_input() -> DimlError {
 
 /// Reports an unexpected character on input.
 pub fn err_unexpected_character(ch: char, row: usize, col: usize) -> DimlError {
-  DimlError::new(&format!("unexpected character: '{}' at row {row} and column {col}", ch.escape_debug()))
+  DimlError::new(&format!("unexpected character '{}', at row {row} and column {col}", ch.escape_debug()))
 }
 
 /// Reports an unexpected end of input.
-pub fn err_unexpected_end() -> DimlError {
-  DimlError::new("unexpected end of input")
+pub fn err_missing_final_newline(row: usize, col: usize) -> DimlError {
+  DimlError::new(&format!("missing newline at the end of input, at row {row} and column {col}"))
 }
 
 /// Reports expected node name token.

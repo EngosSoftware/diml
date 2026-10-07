@@ -150,7 +150,7 @@ impl<'a> Tokenizer<'a> {
           // Process the node name.
           match self.current_char {
             NULL => {
-              return Err(err_unexpected_end());
+              return Err(err_missing_final_newline(self.row, self.column + 1));
             }
             WS => {
               self.consume_node_name();
@@ -179,7 +179,7 @@ impl<'a> Tokenizer<'a> {
         TokenizerState::Indentation => {
           // Process the indentation.
           match self.current_char {
-            NULL => return Err(err_unexpected_end()),
+            NULL => return Err(err_missing_final_newline(self.row, self.column + 1)),
             ch if self.is_delimiter(ch) => {
               self.consume_node_content();
               self.consume_indentation()?;
@@ -198,7 +198,7 @@ impl<'a> Tokenizer<'a> {
         TokenizerState::NodeContent => {
           // Process the content.
           match self.current_char {
-            NULL => return Err(err_unexpected_end()),
+            NULL => return Err(err_missing_final_newline(self.row, self.column + 1)),
             LF => {
               self.next_row();
               self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
