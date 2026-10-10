@@ -39,11 +39,6 @@ impl Node {
     }
   }
 
-  /// Returns `true` when node is a root.
-  pub(crate) fn is_root(&self) -> bool {
-    self.level == 0
-  }
-
   /// Creates a new node.
   pub(crate) fn new(level: usize, delimiter: char, name: String, content: String) -> Self {
     Self {
@@ -131,7 +126,7 @@ impl Node {
   /// Returns a document starting from this node.
   pub fn document(&self, indentation: usize, ch: char) -> String {
     let mut buffer = String::new();
-    if !self.is_root() {
+    if self.level > 0 {
       let indentation = if self.level > 1 {
         ch.to_string().repeat((self.level - 1) * indentation)
       } else {
