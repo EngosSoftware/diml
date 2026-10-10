@@ -7,19 +7,22 @@ use std::fmt::Write;
 #[derive(Debug, Clone)]
 pub struct Node {
   /// Indentation level of the node.
-  /// Root note has level `0`. Top level nodes have value `1`.
+  /// Root (virtual) node has level `0`.
+  /// Top level nodes in parsed document have level `1`.
   level: usize,
   /// Name delimiter.
-  /// Original name delimiter as defined in the parsed document.
+  /// Delimiter character as defined in parsed document.
+  /// Root (virtual) node hss no delimiter.
   delimiter: char,
   /// The name of the node.
-  /// Original name as defined in the parsed document but without delimiter.
+  /// Node name as defined in parsed document without delimiter.
+  /// Root (virtual) node has an empty name.
   name: String,
   /// The content of the node.
-  /// Original content as defined in the parsed document.
+  /// Node content as defined in parsed document.
   content: String,
   /// Child nodes.
-  /// A list of all child nodes in the document tree.
+  /// A list of all child nodes of this node.
   children: Vec<Node>,
 }
 
@@ -125,18 +128,18 @@ impl Node {
   }
 
   /// Returns a document starting from this node.
-  pub fn document(&self, indent: usize, ch: char) -> String {
+  pub fn document(&self, indentation: usize, ch: char) -> String {
     let mut buffer = String::new();
     if !self.is_root() {
       let indentation = if self.level > 1 {
-        ch.to_string().repeat((self.level - 1) * indent)
+        ch.to_string().repeat((self.level - 1) * indentation)
       } else {
         "".to_string()
       };
       let _ = write!(&mut buffer, "{}{}{}{}", indentation, self.delimiter, self.name, self.content);
     }
     for child in &self.children {
-      let _ = write!(&mut buffer, "{}", child.document(indent, ch));
+      let _ = write!(&mut buffer, "{}", child.document(indentation, ch));
     }
     buffer
   }
