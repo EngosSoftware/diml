@@ -1,9 +1,10 @@
 //! # Tokenizer implementation
 
-use crate::defs::*;
 use crate::errors::*;
 use normalized_line_endings::{Annotated, AnnotatedChar, LF, LineEnding};
 use std::mem::take;
+
+const NULL: char = 0 as char;
 
 /// Tokenizes input text.
 pub fn tokenize(input: &str) -> Result<Vec<Token>> {
@@ -53,7 +54,7 @@ pub struct Tokenizer<'a> {
   /// The content of currently processed indentation.
   indentation: String,
   /// Delimiter used in processed document.
-  delimiter: char,
+  delimiter: Option<char>,
   /// The name of currently processed node.
   node_name: String,
   /// The content of currently processed node.
@@ -73,7 +74,7 @@ impl<'a> Tokenizer<'a> {
       current_char: NULL,
       line_ending: None,
       indentation: "".to_string(),
-      delimiter: NULL,
+      delimiter: None,
       node_name: "".to_string(),
       node_content: "".to_string(),
       tokens: vec![],
@@ -106,7 +107,7 @@ impl<'a> Tokenizer<'a> {
           match self.current_char {
             NULL => return Err(err_empty_input()),
             ch if self.is_allowed_char(ch) => {
-              self.delimiter = ch;
+              self.delimiter = Some(ch);
               self.tokens.push(Token::Indentation(0));
               self.state = TokenizerState::NodeName;
             }
@@ -224,7 +225,7 @@ impl<'a> Tokenizer<'a> {
 
   /// Consumes the node name.
   fn consume_node_name(&mut self) {
-    self.tokens.push(Token::NodeName(take(&mut self.node_name), self.delimiter));
+    self.tokens.push(Token::NodeName(take(&mut self.node_name), self.delimiter.unwrap_or_default()));
   }
 
   /// Consumes the node content.
@@ -239,7 +240,7 @@ impl<'a> Tokenizer<'a> {
 
   /// Returns `true` when the specified character is equal to recognized delimiter.
   fn is_delimiter(&self, ch: char) -> bool {
-    ch == self.delimiter
+    self.delimiter == Some(ch)
   }
 
   /// Advances the counter to the next row.
