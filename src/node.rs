@@ -125,13 +125,13 @@ impl Node {
   /// Returns a document starting from this node.
   pub fn document(&self, indentation: usize, ch: char) -> String {
     let mut buffer = String::new();
-    if self.level > 0 {
+    if let Some(delimiter) = self.delimiter {
       let indentation = if self.level > 1 {
         ch.to_string().repeat((self.level - 1) * indentation)
       } else {
         "".to_string()
       };
-      let _ = write!(&mut buffer, "{}{}{}{}", indentation, self.delimiter.unwrap_or_default(), self.name, self.content);
+      let _ = write!(&mut buffer, "{}{}{}{}", indentation, delimiter, self.name, self.content);
     }
     for child in &self.children {
       let _ = write!(&mut buffer, "{}", child.document(indentation, ch));
