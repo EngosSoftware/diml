@@ -213,7 +213,7 @@ impl<'a> Tokenizer<'a> {
 
   /// Consumes the indentation.
   fn consume_indentation(&mut self) -> Result<()> {
-    if self.indentation.chars().all(|ch| ch == WS) {
+    if self.indentation.chars().all(|ch| ch == ' ') {
       self.tokens.push(Token::Indentation(self.indentation.len()));
       self.indentation.clear();
       Ok(())
