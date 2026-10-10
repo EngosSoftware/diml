@@ -20,6 +20,7 @@ pub struct Node {
   name: String,
   /// The content of the node.
   /// Node content as defined in parsed document.
+  /// Root (virtual) node has an empty content.
   content: String,
   /// Child nodes.
   /// A list of all child nodes of this node.
@@ -32,7 +33,7 @@ impl Node {
     Self {
       level: 0,
       delimiter: NULL,
-      name: "root".to_string(),
+      name: "".to_string(),
       content: "".to_string(),
       children: vec![],
     }
