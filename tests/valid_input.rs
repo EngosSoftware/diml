@@ -249,3 +249,30 @@ fn _0020() {
   let root = parse(input).unwrap();
   assert_eq!(input, root.document(4, ' '));
 }
+
+#[test]
+fn _0021() {
+  let input = r#"
+.A a
+  .B b
+  
+  .C c
+"#;
+  let root = parse(input.trim_start()).unwrap();
+  let node_a = root.children().next().unwrap();
+  assert_eq!('.', node_a.delimiter());
+  assert_eq!("A", node_a.name());
+  assert_eq!("a", node_a.text());
+  assert_eq!(" a\n", node_a.content());
+  let mut children = node_a.children();
+  let node_b = children.next().unwrap();
+  assert_eq!('.', node_b.delimiter());
+  assert_eq!("B", node_b.name());
+  assert_eq!("b", node_b.text());
+  assert_eq!(" b\n  \n", node_b.content());
+  let node_c = children.next().unwrap();
+  assert_eq!('.', node_c.delimiter());
+  assert_eq!("C", node_c.name());
+  assert_eq!("c", node_c.text());
+  assert_eq!(" c\n", node_c.content());
+}

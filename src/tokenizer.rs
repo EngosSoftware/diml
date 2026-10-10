@@ -184,6 +184,13 @@ impl<'a> Tokenizer<'a> {
             ch if self.is_whitespace(ch) => {
               self.indentation.push(ch);
             }
+            LF => {
+              self.next_row();
+              self.node_content.push_str(&self.indentation);
+              self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
+              self.indentation.clear();
+              self.state = TokenizerState::NewLine;
+            }
             ch => {
               self.node_content.push_str(&self.indentation);
               self.node_content.push(ch);

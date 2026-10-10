@@ -19,7 +19,7 @@ impl Display for DimlError {
 
 impl DimlError {
   /// Creates a new [DimlError] with specified error message.
-  pub fn new(message: &str) -> Self {
+  pub(crate) fn new(message: &str) -> Self {
     Self(message.to_string())
   }
 }
