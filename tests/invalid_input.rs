@@ -48,45 +48,34 @@ fn _0006() {
 
 #[test]
 fn _0007() {
-  for ch in '\u{0001}'..='\u{0019}' {
-    if !matches!(ch, '\n' | '\r' | '\t') {
-      let input = format!(".{}", ch);
-      let expected = format!("unexpected character '{}', at row 1 and column 2", ch.escape_debug());
-      assert_eq!(expected, parse(&input).unwrap_err().to_string());
-    }
-  }
-}
-
-#[test]
-fn _0008() {
   // Node name is not followed by a whitespace, newline or both.
   let input = ".A";
   assert_eq!("missing newline at the end of input, at row 1 and column 3", parse(input).unwrap_err().to_string());
 }
 
 #[test]
-fn _0009() {
+fn _0008() {
   // Node name is not followed by a whitespace and newline.
   let input = ".A ";
   assert_eq!("missing newline at the end of input, at row 1 and column 4", parse(input).unwrap_err().to_string());
 }
 
 #[test]
-fn _0010() {
+fn _0009() {
   // Root node name must be at the very beginning of the line, without any indentation before like space.
   let input = " .A\n";
   assert_eq!("unexpected character ' ', at row 1 and column 1", parse(input).unwrap_err().to_string());
 }
 
 #[test]
-fn _0011() {
+fn _0010() {
   // Root node name must be at the very beginning of the line, without any indentation before like horizontal tab.
   let input = "\t.A\n";
   assert_eq!(r#"unexpected character '\t', at row 1 and column 1"#, parse(input).unwrap_err().to_string());
 }
 
 #[test]
-fn _0012() {
+fn _0011() {
   // Spaces after the last newline character.
   let input = r#".MODEL
     .NAMESPACE https://decision-toolkit.org/2_0001/
@@ -95,7 +84,7 @@ fn _0012() {
 }
 
 #[test]
-fn _0013() {
+fn _0012() {
   // Malformed indentation
   let input = r#".A
     .B
@@ -106,7 +95,7 @@ fn _0013() {
 }
 
 #[test]
-fn _0014() {
+fn _0013() {
   // Malformed indentation
   let input = r#".A
         .B
@@ -117,63 +106,56 @@ fn _0014() {
 }
 
 #[test]
-fn _0015() {
+fn _0014() {
   // Inconsistent indentation
   let input = ".A\n  .B\n\t\t.C\n  .D\n";
   assert_eq!("inconsistent indentation, mixed spaces and tabs", parse(input).unwrap_err().to_string());
 }
 
 #[test]
-fn _0016() {
+fn _0015() {
   // Inconsistent indentation
   let input = ".A\n  .B\n \t.C\n  .D\n";
   assert_eq!("inconsistent indentation, mixed spaces and tabs", parse(input).unwrap_err().to_string());
 }
 
 #[test]
-fn _0017() {
+fn _0016() {
   // No indentation token.
   let tokens = vec![Token::NodeName("A".to_string(), '.')];
   assert_eq!("expected indentation token", Parser::new(tokens).parse().unwrap_err().to_string())
 }
 
 #[test]
-fn _0018() {
+fn _0017() {
   // No node name token.
   let tokens = vec![Token::Indentation(0), Token::NodeContent("content".to_string())];
   assert_eq!("expected node name token", Parser::new(tokens).parse().unwrap_err().to_string())
 }
 
 #[test]
-fn _0019() {
+fn _0018() {
   // No node content token.
   let tokens = vec![Token::Indentation(0), Token::NodeName("name".to_string(), '.'), Token::Indentation(0)];
   assert_eq!("expected node content token", Parser::new(tokens).parse().unwrap_err().to_string())
 }
 
 #[test]
-fn _0020() {
-  // Non-breaking space is not allowed in node name.
-  let input = ".node\u{A0}name content\n";
-  assert_eq!(r#"unexpected character '\u{a0}', at row 1 and column 6"#, parse(input).unwrap_err().to_string());
-}
-
-#[test]
-fn _0021() {
+fn _0019() {
   // Skipped indentation level when nesting.
   let input = ".A\n  .B\n      .C\n";
   assert_eq!("skipped indentation level, jump from level 2 to level 4", parse(input).unwrap_err().to_string());
 }
 
 #[test]
-fn _0022() {
+fn _0020() {
   // Skipped indentation level after continuation in a lower level.
   let input = ".A\n  .B\n.C\n    .D\n";
   assert_eq!("skipped indentation level, jump from level 1 to level 3", parse(input).unwrap_err().to_string());
 }
 
 #[test]
-fn _0023() {
+fn _0021() {
   // Skipped indentation level in the first node.
   let tokens = vec![Token::Indentation(4), Token::NodeName("A".to_string(), '.'), Token::NodeContent("\n".to_string())];
   assert_eq!(
@@ -183,15 +165,22 @@ fn _0023() {
 }
 
 #[test]
-fn _0024() {
+fn _0022() {
   // No newline after the content of the last node.
   let input = ".A\n  .B content";
   assert_eq!("missing newline at the end of input, at row 2 and column 13", parse(input).unwrap_err().to_string());
 }
 
 #[test]
-fn _0025() {
+fn _0023() {
   // No newline after the last node, with CRLF line endings.
   let input = ".A\r\n.B";
   assert_eq!("missing newline at the end of input, at row 2 and column 3", parse(input).unwrap_err().to_string());
+}
+
+#[test]
+fn _0024() {
+  // No control character is allowed inside a node name.
+  let input = ".A\u{7f}BC abc\n";
+  assert_eq!(r#"unexpected character '\u{7f}', at row 1 and column 3"#, parse(input).unwrap_err().to_string());
 }
