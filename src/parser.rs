@@ -1,7 +1,6 @@
 //! # Parser implementation
 
 use crate::Node;
-use crate::defs::*;
 use crate::errors::*;
 use crate::tokenizer::{Token, tokenize};
 use std::mem::take;
@@ -31,7 +30,7 @@ pub struct Parser {
   first_indent: usize,
   last_indent: usize,
   last_name: String,
-  last_delimiter: char,
+  last_delimiter: Option<char>,
 }
 
 impl Parser {
@@ -45,7 +44,7 @@ impl Parser {
       first_indent: 0,
       last_indent: 0,
       last_name: "".to_string(),
-      last_delimiter: NULL,
+      last_delimiter: None,
     }
   }
 
@@ -67,7 +66,7 @@ impl Parser {
         ParserState::NodeName => {
           if let Token::NodeName(name, delimiter) = token {
             self.last_name = name;
-            self.last_delimiter = delimiter;
+            self.last_delimiter = delimiter.into();
             self.state = ParserState::NodeContent;
           } else {
             return Err(err_expected_node_name());
@@ -78,7 +77,7 @@ impl Parser {
             let last_name = take(&mut self.last_name);
             self.create_node(self.last_indent, self.last_delimiter, last_name, content)?;
             self.last_indent = 0;
-            self.last_delimiter = NULL;
+            self.last_delimiter = None;
             self.state = ParserState::Indentation;
           } else {
             return Err(err_expected_node_content());
@@ -104,7 +103,7 @@ impl Parser {
   }
 
   /// Creates a new node and adds it to the parsed node list.
-  fn create_node(&mut self, indent: usize, delimiter: char, name: String, content: String) -> Result<()> {
+  fn create_node(&mut self, indent: usize, delimiter: Option<char>, name: String, content: String) -> Result<()> {
     let multiplier = self.first_indent;
     if multiplier > 0 && !indent.is_multiple_of(multiplier) {
       return Err(err_malformed_indentation(indent, multiplier));

@@ -1,6 +1,5 @@
 //! # Tree node implementation
 
-use crate::defs::*;
 use std::fmt::Write;
 
 /// Tree node.
@@ -13,7 +12,7 @@ pub struct Node {
   /// Name delimiter.
   /// Delimiter character as defined in parsed document.
   /// Root (virtual) node hss no delimiter.
-  delimiter: char,
+  delimiter: Option<char>,
   /// The name of the node.
   /// Node name as defined in parsed document without delimiter.
   /// Root (virtual) node has an empty name.
@@ -32,7 +31,7 @@ impl Node {
   pub(crate) fn root() -> Self {
     Self {
       level: 0,
-      delimiter: NULL,
+      delimiter: None,
       name: "".to_string(),
       content: "".to_string(),
       children: vec![],
@@ -40,7 +39,7 @@ impl Node {
   }
 
   /// Creates a new node.
-  pub(crate) fn new(level: usize, delimiter: char, name: String, content: String) -> Self {
+  pub(crate) fn new(level: usize, delimiter: Option<char>, name: String, content: String) -> Self {
     Self {
       level,
       delimiter,
@@ -61,7 +60,7 @@ impl Node {
   }
 
   /// Returns the delimiter of the node.
-  pub fn delimiter(&self) -> char {
+  pub fn delimiter(&self) -> Option<char> {
     self.delimiter
   }
 
@@ -132,7 +131,7 @@ impl Node {
       } else {
         "".to_string()
       };
-      let _ = write!(&mut buffer, "{}{}{}{}", indentation, self.delimiter, self.name, self.content);
+      let _ = write!(&mut buffer, "{}{}{}{}", indentation, self.delimiter.unwrap_or_default(), self.name, self.content);
     }
     for child in &self.children {
       let _ = write!(&mut buffer, "{}", child.document(indentation, ch));
