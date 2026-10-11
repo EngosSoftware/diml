@@ -1,7 +1,5 @@
 //! # Tree node implementation
 
-use std::fmt::Write;
-
 /// Tree node.
 #[derive(Debug, Clone)]
 pub struct Node {
@@ -24,6 +22,20 @@ pub struct Node {
   /// Child nodes.
   /// A list of all child nodes of this node.
   children: Vec<Node>,
+}
+
+impl std::fmt::Display for Node {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let width = f.width().unwrap_or(2);
+    if let Some(delimiter) = self.delimiter {
+      let indent = self.level.saturating_sub(1) * width;
+      write!(f, "{:indent$}{}{}{}", "", delimiter, self.name, self.content)?;
+    }
+    for child in &self.children {
+      write!(f, "{:width$}", child)?;
+    }
+    Ok(())
+  }
 }
 
 impl Node {
@@ -119,18 +131,5 @@ impl Node {
   /// Returns the number of child nodes.
   pub fn child_count(&self) -> usize {
     self.children.len()
-  }
-
-  /// Returns a formatted document starting from this node.
-  pub fn format(&self, indentation: usize) -> String {
-    let mut buffer = String::new();
-    if let Some(delimiter) = self.delimiter {
-      let indent = if self.level > 1 { " ".repeat((self.level - 1) * indentation) } else { "".to_string() };
-      let _ = write!(&mut buffer, "{}{}{}{}", indent, delimiter, self.name, self.content);
-    }
-    for child in &self.children {
-      let _ = write!(&mut buffer, "{}", child.format(indentation));
-    }
-    buffer
   }
 }
