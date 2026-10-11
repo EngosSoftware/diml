@@ -58,13 +58,15 @@ pub fn err_expected_indentation_token() -> DimlError {
 }
 
 /// Reports invalid indentation.
-pub fn err_invalid_indentation(indent: usize, multiplier: usize, _line: usize, _column: usize) -> DimlError {
-  DimlError::new(format!("invalid indentation {indent}, expected multiplication of {multiplier} spaces"))
+pub fn err_invalid_indentation(indent: usize, multiplier: usize, line: usize, column: usize) -> DimlError {
+  DimlError::new(format!(
+    "invalid indentation {indent}, expected multiplication of {multiplier} spaces at line {line}, column {column}",
+  ))
 }
 
 /// Reports unexpected indentation character.
 pub fn err_unexpected_indentation_character(ch: char, line: usize, column: usize) -> DimlError {
-  DimlError::new(format!("unexpected indentation character '{}' at line {}, column {}", ch.escape_debug(), line, column))
+  DimlError::new(format!("unexpected indentation character '{}' at line {line}, column {column}", ch.escape_debug()))
 }
 
 /// Reports skipped indentation level.

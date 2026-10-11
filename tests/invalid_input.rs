@@ -110,7 +110,10 @@ fn _0014() {
     .C
    .D
 "#;
-  assert_eq!("invalid indentation 3, expected multiplication of 4 spaces", parse(input).unwrap_err().to_string());
+  assert_eq!(
+    "invalid indentation 3, expected multiplication of 4 spaces at line 0, column 0",
+    parse(input).unwrap_err().to_string()
+  );
 }
 
 #[test]
@@ -121,7 +124,10 @@ fn _0015() {
     .C
     .D
 "#;
-  assert_eq!("invalid indentation 4, expected multiplication of 8 spaces", parse(input).unwrap_err().to_string());
+  assert_eq!(
+    "invalid indentation 4, expected multiplication of 8 spaces at line 0, column 0",
+    parse(input).unwrap_err().to_string()
+  );
 }
 
 #[test]
