@@ -34,12 +34,12 @@ pub fn err_empty_input() -> DimlError {
 
 /// Reports an unexpected character on input.
 pub fn err_unexpected_character(ch: char, line: usize, col: usize) -> DimlError {
-  DimlError::new(format!("unexpected character '{}', at line {line} and column {col}", ch.escape_debug()))
+  DimlError::new(format!("unexpected character '{}' at line {line}, column {col}", ch.escape_debug()))
 }
 
 /// Reports a missing newline at the end of the last line.
-pub fn err_missing_final_newline(line: usize, col: usize) -> DimlError {
-  DimlError::new(format!("missing newline at the end of input, at line {line} and column {col}"))
+pub fn err_missing_newline(line: usize, col: usize) -> DimlError {
+  DimlError::new(format!("missing newline at the end of input at line {line}, column {col}"))
 }
 
 /// Reports expected node name token.
@@ -64,7 +64,7 @@ pub fn err_invalid_indentation(indent: usize, multiplier: usize) -> DimlError {
 
 /// Reports unexpected indentation character.
 pub fn err_unexpected_indentation_character(ch: char, line: usize, column: usize) -> DimlError {
-  DimlError::new(format!("unexpected indentation character '{}', at line {} and column {}", ch.escape_debug(), line, column))
+  DimlError::new(format!("unexpected indentation character '{}' at line {}, column {}", ch.escape_debug(), line, column))
 }
 
 /// Reports skipped indentation level.

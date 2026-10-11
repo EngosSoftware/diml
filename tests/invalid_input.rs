@@ -14,7 +14,7 @@ fn _0002() {
   let inputs = ["\n", "\r\n", "\r"];
   for input in inputs {
     assert_eq!(
-      format!("unexpected character '{}', at line 1 and column 1", input[..1].escape_debug()),
+      format!("unexpected character '{}' at line 1, column 1", input[..1].escape_debug()),
       parse(input).unwrap_err().to_string()
     );
   }
@@ -24,35 +24,35 @@ fn _0002() {
 fn _0003() {
   // Input beginning with space is invalid.
   let input = " ";
-  assert_eq!("unexpected character ' ', at line 1 and column 1", parse(input).unwrap_err().to_string());
+  assert_eq!("unexpected character ' ' at line 1, column 1", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0004() {
   // Input beginning with tab is invalid.
   let input = "\t";
-  assert_eq!(r#"unexpected character '\t', at line 1 and column 1"#, parse(input).unwrap_err().to_string());
+  assert_eq!(r#"unexpected character '\t' at line 1, column 1"#, parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0005() {
   // Input beginning with a control character is invalid.
   let input = "\u{7f}";
-  assert_eq!(r#"unexpected character '\u{7f}', at line 1 and column 1"#, parse(input).unwrap_err().to_string());
+  assert_eq!(r#"unexpected character '\u{7f}' at line 1, column 1"#, parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0006() {
   // Delimiter character without a newline at the end of line is invalid.
   let input = ".";
-  assert_eq!("missing newline at the end of input, at line 1 and column 2", parse(input).unwrap_err().to_string());
+  assert_eq!("missing newline at the end of input at line 1, column 2", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0007() {
   // No newline after empty name at the end of the line is invalid.
   let input = ". ";
-  assert_eq!("missing newline at the end of input, at line 1 and column 3", parse(input).unwrap_err().to_string());
+  assert_eq!("missing newline at the end of input at line 1, column 3", parse(input).unwrap_err().to_string());
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn _0008() {
   // Input beginning with whitespace or control character is invalid.
   for ch in '\u{0001}'..='\u{0020}' {
     let input = format!("{}", ch);
-    let expected = format!("unexpected character '{}', at line 1 and column 1", ch.escape_debug());
+    let expected = format!("unexpected character '{}' at line 1, column 1", ch.escape_debug());
     assert_eq!(expected, parse(&input).unwrap_err().to_string());
   }
 }
@@ -69,28 +69,28 @@ fn _0008() {
 fn _0009() {
   // Input with node name not followed by a whitespace, newline or both is invalid.
   let input = ".A";
-  assert_eq!("missing newline at the end of input, at line 1 and column 3", parse(input).unwrap_err().to_string());
+  assert_eq!("missing newline at the end of input at line 1, column 3", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0010() {
   // Node name is not followed by a whitespace and newline.
   let input = ".A ";
-  assert_eq!("missing newline at the end of input, at line 1 and column 4", parse(input).unwrap_err().to_string());
+  assert_eq!("missing newline at the end of input at line 1, column 4", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0011() {
   // Root node name must be at the very beginning of the line, without any indentation before like space.
   let input = " .A\n";
-  assert_eq!("unexpected character ' ', at line 1 and column 1", parse(input).unwrap_err().to_string());
+  assert_eq!("unexpected character ' ' at line 1, column 1", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0012() {
   // Root node name must be at the very beginning of the line, without any indentation before like horizontal tab.
   let input = "\t.A\n";
-  assert_eq!(r#"unexpected character '\t', at line 1 and column 1"#, parse(input).unwrap_err().to_string());
+  assert_eq!(r#"unexpected character '\t' at line 1, column 1"#, parse(input).unwrap_err().to_string());
 }
 
 #[test]
@@ -99,7 +99,7 @@ fn _0013() {
   let input = r#".MODEL
     .NAMESPACE https://decision-toolkit.org/2_0001/
   "#;
-  assert_eq!("missing newline at the end of input, at line 3 and column 3", parse(input).unwrap_err().to_string());
+  assert_eq!("missing newline at the end of input at line 3, column 3", parse(input).unwrap_err().to_string());
 }
 
 #[test]
@@ -128,17 +128,14 @@ fn _0015() {
 fn _0016() {
   // Unexpected character in indentation (only spaces are allowed in indentation).
   let input = ".A\n  .B\n \t.C\n  .D\n";
-  assert_eq!(
-    r#"unexpected indentation character '\u{a0}', at line 3 and column 1"#,
-    parse(input).unwrap_err().to_string()
-  );
+  assert_eq!(r#"unexpected indentation character '\u{a0}' at line 3, column 1"#, parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0017() {
   // Unexpected character in indentation (only spaces are allowed in indentation).
   let input = ".A\n  .B\n \t.C\n  .D\n";
-  assert_eq!(r#"unexpected indentation character '\t', at line 3 and column 2"#, parse(input).unwrap_err().to_string());
+  assert_eq!(r#"unexpected indentation character '\t' at line 3, column 2"#, parse(input).unwrap_err().to_string());
 }
 
 #[test]
@@ -190,26 +187,26 @@ fn _0023() {
 fn _0024() {
   // No newline after the content of the last node.
   let input = ".A\n  .B content";
-  assert_eq!("missing newline at the end of input, at line 2 and column 13", parse(input).unwrap_err().to_string());
+  assert_eq!("missing newline at the end of input at line 2, column 13", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0025() {
   // No newline after the last node, with CRLF line endings.
   let input = ".A\r\n.B";
-  assert_eq!("missing newline at the end of input, at line 2 and column 3", parse(input).unwrap_err().to_string());
+  assert_eq!("missing newline at the end of input at line 2, column 3", parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0026() {
   // No control character is allowed inside a node name.
   let input = ".A\u{7f}BC abc\n";
-  assert_eq!(r#"unexpected character '\u{7f}', at line 1 and column 3"#, parse(input).unwrap_err().to_string());
+  assert_eq!(r#"unexpected character '\u{7f}' at line 1, column 3"#, parse(input).unwrap_err().to_string());
 }
 
 #[test]
 fn _0027() {
   // No control character is allowed inside a node value.
   let input = ".A ab\u{7f}cd\n";
-  assert_eq!(r#"unexpected character '\u{7f}', at line 1 and column 6"#, parse(input).unwrap_err().to_string());
+  assert_eq!(r#"unexpected character '\u{7f}' at line 1, column 6"#, parse(input).unwrap_err().to_string());
 }
