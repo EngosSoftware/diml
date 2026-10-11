@@ -206,3 +206,10 @@ fn _0026() {
   let input = ".A\u{7f}BC abc\n";
   assert_eq!(r#"unexpected character '\u{7f}', at line 1 and column 3"#, parse(input).unwrap_err().to_string());
 }
+
+#[test]
+fn _0027() {
+  // No control character is allowed inside a node value.
+  let input = ".A ab\u{7f}cd\n";
+  assert_eq!(r#"unexpected character '\u{7f}', at line 1 and column 6"#, parse(input).unwrap_err().to_string());
+}
