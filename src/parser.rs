@@ -89,7 +89,7 @@ impl Parser {
       if self.stack.is_empty() {
         self.stack.push(node);
       } else {
-        while !self.stack.is_empty() && node.level() < self.stack.last().unwrap().level() {
+        while self.stack.last().is_some_and(|last| last.level() > node.level()) {
           node.add_child(self.stack.pop().unwrap());
         }
         self.stack.push(node);
