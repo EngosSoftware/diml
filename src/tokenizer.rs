@@ -37,8 +37,8 @@ enum TokenizerState {
 
 /// Tokenizer.
 pub struct Tokenizer<'a> {
-  /// Current row position in processed input.
-  row: usize,
+  /// Current line position in processed input.
+  line: usize,
   /// Current column position in processed content.
   column: usize,
   /// Current tokenizing state.
@@ -65,7 +65,7 @@ impl<'a> Tokenizer<'a> {
   /// Creates a new instance of the tokenizer.
   pub fn new(input: &'a str) -> Self {
     Self {
-      row: 1,
+      line: 1,
       column: 0,
       state: TokenizerState::Start,
       input,
@@ -85,13 +85,13 @@ impl<'a> Tokenizer<'a> {
     loop {
       (self.current_char, self.line_ending) = if let Some(annotated_char) = chars.next() {
         match annotated_char {
-          AnnotatedChar::Character(ch, row, column) => {
-            self.row = row;
+          AnnotatedChar::Character(ch, line, column) => {
+            self.line = line;
             self.column = column;
             (Some(ch), None)
           }
-          AnnotatedChar::LineEnding(line_ending, row, column) => {
-            self.row = row;
+          AnnotatedChar::LineEnding(line_ending, line, column) => {
+            self.line = line;
             self.column = column;
             (Some(LF), Some(line_ending))
           }
@@ -111,7 +111,7 @@ impl<'a> Tokenizer<'a> {
             }
             Some(ch) => {
               let ch = if ch == LF { self.line_ending.unwrap_or(LineEnding::Lf).first() } else { ch };
-              return Err(err_unexpected_character(ch, self.row, self.column));
+              return Err(err_unexpected_character(ch, self.line, self.column));
             }
           }
         }
@@ -128,7 +128,7 @@ impl<'a> Tokenizer<'a> {
               self.state = TokenizerState::NodeName;
             }
             Some(LF) => {
-              self.next_row();
+              self.next_line();
               self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
             }
             Some(ch) if ch.is_whitespace() => {
@@ -145,10 +145,10 @@ impl<'a> Tokenizer<'a> {
           // Process the node name.
           match self.current_char {
             None => {
-              return Err(err_missing_final_newline(self.row, self.column + 1));
+              return Err(err_missing_final_newline(self.line, self.column + 1));
             }
             Some(LF) => {
-              self.next_row();
+              self.next_line();
               self.consume_node_name();
               self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
               self.state = TokenizerState::NewLine;
@@ -162,21 +162,21 @@ impl<'a> Tokenizer<'a> {
               self.node_name.push(ch);
             }
             Some(ch) => {
-              return Err(err_unexpected_character(ch, self.row, self.column));
+              return Err(err_unexpected_character(ch, self.line, self.column));
             }
           }
         }
         TokenizerState::Indentation => {
           // Process the indentation.
           match self.current_char {
-            None => return Err(err_missing_final_newline(self.row, self.column + 1)),
+            None => return Err(err_missing_final_newline(self.line, self.column + 1)),
             Some(ch) if self.is_delimiter(ch) => {
               self.consume_node_content();
               self.consume_indentation()?;
               self.state = TokenizerState::NodeName;
             }
             Some(LF) => {
-              self.next_row();
+              self.next_line();
               self.node_content.push_str(&self.indentation);
               self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
               self.indentation.clear();
@@ -196,9 +196,9 @@ impl<'a> Tokenizer<'a> {
         TokenizerState::NodeContent => {
           // Process the content.
           match self.current_char {
-            None => return Err(err_missing_final_newline(self.row, self.column + 1)),
+            None => return Err(err_missing_final_newline(self.line, self.column + 1)),
             Some(LF) => {
-              self.next_row();
+              self.next_line();
               self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
               self.state = TokenizerState::NewLine
             }
@@ -213,7 +213,7 @@ impl<'a> Tokenizer<'a> {
   /// Consumes the indentation.
   fn consume_indentation(&mut self) -> Result<()> {
     if let Some((index, ch)) = self.indentation.chars().enumerate().find(|(_, ch)| *ch != ' ') {
-      return Err(err_unexpected_indentation_character(ch, self.row, index + 1));
+      return Err(err_unexpected_indentation_character(ch, self.line, index + 1));
     }
     self.tokens.push(Token::Indentation(self.indentation.len()));
     self.indentation.clear();
@@ -240,9 +240,9 @@ impl<'a> Tokenizer<'a> {
     self.delimiter == Some(ch)
   }
 
-  /// Advances the counter to the next row.
-  fn next_row(&mut self) {
-    self.row += 1;
+  /// Advances the counter to the next line.
+  fn next_line(&mut self) {
+    self.line += 1;
     self.column = 0;
   }
 }
