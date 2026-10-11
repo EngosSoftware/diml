@@ -107,16 +107,19 @@ fn _0013() {
 
 #[test]
 fn _0014() {
-  // Inconsistent indentation
-  let input = ".A\n  .B\n\t\t.C\n  .D\n";
-  assert_eq!("inconsistent indentation, mixed spaces and tabs", parse(input).unwrap_err().to_string());
+  // Unexpected character in indentation (only spaces are allowed in indentation).
+  let input = ".A\n  .B\n \t.C\n  .D\n";
+  assert_eq!(
+    r#"unexpected indentation character '\u{a0}', at line y and column x"#,
+    parse(input).unwrap_err().to_string()
+  );
 }
 
 #[test]
 fn _0015() {
-  // Inconsistent indentation
+  // Unexpected character in indentation (only spaces are allowed in indentation).
   let input = ".A\n  .B\n \t.C\n  .D\n";
-  assert_eq!("inconsistent indentation, mixed spaces and tabs", parse(input).unwrap_err().to_string());
+  assert_eq!(r#"unexpected indentation character '\t', at line y and column x"#, parse(input).unwrap_err().to_string());
 }
 
 #[test]

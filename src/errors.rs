@@ -19,8 +19,8 @@ impl Display for DimlError {
 
 impl DimlError {
   /// Creates a new [DimlError] with specified error message.
-  pub(crate) fn new(message: &str) -> Self {
-    Self(message.to_string())
+  pub(crate) fn new(message: impl AsRef<str>) -> Self {
+    Self(message.as_ref().to_string())
   }
 }
 
@@ -34,12 +34,12 @@ pub fn err_empty_input() -> DimlError {
 
 /// Reports an unexpected character on input.
 pub fn err_unexpected_character(ch: char, row: usize, col: usize) -> DimlError {
-  DimlError::new(&format!("unexpected character '{}', at row {row} and column {col}", ch.escape_debug()))
+  DimlError::new(format!("unexpected character '{}', at row {row} and column {col}", ch.escape_debug()))
 }
 
 /// Reports a missing newline at the end of the last line.
 pub fn err_missing_final_newline(row: usize, col: usize) -> DimlError {
-  DimlError::new(&format!("missing newline at the end of input, at row {row} and column {col}"))
+  DimlError::new(format!("missing newline at the end of input, at row {row} and column {col}"))
 }
 
 /// Reports expected node name token.
@@ -59,15 +59,15 @@ pub fn err_expected_indentation() -> DimlError {
 
 /// Reports invalid indentation.
 pub fn err_invalid_indentation(indent: usize, multiplier: usize) -> DimlError {
-  DimlError::new(&format!("invalid indentation {indent}, expected multiplication of {multiplier} spaces"))
+  DimlError::new(format!("invalid indentation {indent}, expected multiplication of {multiplier} spaces"))
 }
 
 /// Reports unexpected indentation character.
-pub fn err_unexpected_indentation_character() -> DimlError {
-  DimlError::new("inconsistent indentation, mixed spaces and tabs")
+pub fn err_unexpected_indentation_character(ch: char) -> DimlError {
+  DimlError::new(format!("unexpected indentation character '{}', at line y and column x", ch.escape_debug()))
 }
 
 /// Reports skipped indentation level.
 pub fn err_skipped_indentation_level(previous_level: usize, level: usize) -> DimlError {
-  DimlError::new(&format!("skipped indentation level, jump from level {previous_level} to level {level}"))
+  DimlError::new(format!("skipped indentation level, jump from level {previous_level} to level {level}"))
 }

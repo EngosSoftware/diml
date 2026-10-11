@@ -212,13 +212,14 @@ impl<'a> Tokenizer<'a> {
 
   /// Consumes the indentation.
   fn consume_indentation(&mut self) -> Result<()> {
-    if self.indentation.chars().all(|ch| ch == ' ') {
-      self.tokens.push(Token::Indentation(self.indentation.len()));
-      self.indentation.clear();
-      Ok(())
-    } else {
-      Err(err_unexpected_indentation_character())
+    for (_index, ch) in self.indentation.chars().enumerate() {
+      if ch != ' ' {
+        return Err(err_unexpected_indentation_character(ch));
+      }
     }
+    self.tokens.push(Token::Indentation(self.indentation.len()));
+    self.indentation.clear();
+    Ok(())
   }
 
   /// Consumes the node name.
