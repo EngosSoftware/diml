@@ -42,21 +42,6 @@ pub fn err_missing_newline(line: usize, column: usize) -> DimlError {
   DimlError::new(format!("missing newline at the end of input at line {line}, column {column}"))
 }
 
-/// Reports expected node name token.
-pub fn err_expected_node_name_token() -> DimlError {
-  DimlError::new("expected node name token")
-}
-
-/// Reports expected node content token.
-pub fn err_expected_node_content_token() -> DimlError {
-  DimlError::new("expected node content token")
-}
-
-/// Reports expected indentation token.
-pub fn err_expected_indentation_token() -> DimlError {
-  DimlError::new("expected indentation token")
-}
-
 /// Reports invalid indentation.
 pub fn err_invalid_indentation(indent: usize, multiplier: usize, line: usize, column: usize) -> DimlError {
   DimlError::new(format!(
@@ -74,4 +59,19 @@ pub fn err_skipped_indentation_level(previous_level: usize, level: usize, line: 
   DimlError::new(format!(
     "skipped indentation level, jump from level {previous_level} to level {level} at line {line}, column {column}"
   ))
+}
+
+/// Reports expected node name token.
+pub fn err_expected_node_name_token() -> DimlError {
+  DimlError::new("expected node name token")
+}
+
+/// Reports expected node content token.
+pub fn err_expected_node_content_token() -> DimlError {
+  DimlError::new("expected node content token")
+}
+
+/// Reports expected indentation token.
+pub fn err_expected_indentation_token() -> DimlError {
+  DimlError::new("expected indentation token")
 }
