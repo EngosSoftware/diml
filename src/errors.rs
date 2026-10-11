@@ -62,8 +62,8 @@ pub fn err_invalid_indentation(indent: usize, multiplier: usize) -> DimlError {
   DimlError::new(&format!("invalid indentation {indent}, expected multiplication of {multiplier} spaces"))
 }
 
-/// Reports inconsistent indentation.
-pub fn err_inconsistent_indentation() -> DimlError {
+/// Reports unexpected indentation character.
+pub fn err_unexpected_indentation_character() -> DimlError {
   DimlError::new("inconsistent indentation, mixed spaces and tabs")
 }
 

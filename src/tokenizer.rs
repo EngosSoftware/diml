@@ -217,7 +217,7 @@ impl<'a> Tokenizer<'a> {
       self.indentation.clear();
       Ok(())
     } else {
-      Err(err_inconsistent_indentation())
+      Err(err_unexpected_indentation_character())
     }
   }
 
