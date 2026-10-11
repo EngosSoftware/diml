@@ -148,14 +148,18 @@ fn _0018() {
 #[test]
 fn _0019() {
   // No node name token.
-  let tokens = vec![Token::Indentation(0), Token::NodeContent("content".to_string())];
+  let tokens = vec![Token::Indentation { length: 0, line: 1 }, Token::NodeContent("content".to_string())];
   assert_eq!("expected node name token", Parser::new(tokens).parse().unwrap_err().to_string())
 }
 
 #[test]
 fn _0020() {
   // No node content token.
-  let tokens = vec![Token::Indentation(0), Token::NodeName("name".to_string(), '.'), Token::Indentation(0)];
+  let tokens = vec![
+    Token::Indentation { length: 0, line: 1 },
+    Token::NodeName("name".to_string(), '.'),
+    Token::Indentation { length: 0, line: 1 },
+  ];
   assert_eq!("expected node content token", Parser::new(tokens).parse().unwrap_err().to_string())
 }
 
@@ -176,7 +180,11 @@ fn _0022() {
 #[test]
 fn _0023() {
   // Skipped indentation level in the first node.
-  let tokens = vec![Token::Indentation(4), Token::NodeName("A".to_string(), '.'), Token::NodeContent("\n".to_string())];
+  let tokens = vec![
+    Token::Indentation { length: 4, line: 1 },
+    Token::NodeName("A".to_string(), '.'),
+    Token::NodeContent("\n".to_string()),
+  ];
   assert_eq!(
     "skipped indentation level, jump from level 0 to level 2",
     Parser::new(tokens).parse().unwrap_err().to_string()

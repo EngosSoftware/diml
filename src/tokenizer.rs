@@ -16,8 +16,14 @@ pub enum Token {
   NodeName(String, char),
   /// Node content token.
   NodeContent(String),
-  /// Indentation token with indentation character.
-  Indentation(usize),
+  /// Indentation token with the indentation width
+  /// and a line where the indentation starts.
+  Indentation {
+    /// Length of the indentation (number of spaces).
+    length: usize,
+    /// Line number where the indentation starts.
+    line: usize,
+  },
 }
 
 /// Tokenizer state.
@@ -106,7 +112,7 @@ impl<'a> Tokenizer<'a> {
             None => return Err(err_empty_input()),
             Some(ch) if self.is_allowed_char(ch) => {
               self.delimiter = Some(ch);
-              self.tokens.push(Token::Indentation(0));
+              self.tokens.push(Token::Indentation { length: 0, line: self.line });
               self.state = TokenizerState::NodeName;
             }
             Some(ch) => {
@@ -124,7 +130,7 @@ impl<'a> Tokenizer<'a> {
             }
             Some(ch) if self.is_delimiter(ch) => {
               self.consume_node_content();
-              self.tokens.push(Token::Indentation(0));
+              self.tokens.push(Token::Indentation { length: 0, line: self.line });
               self.state = TokenizerState::NodeName;
             }
             Some(LF) => {
@@ -218,7 +224,10 @@ impl<'a> Tokenizer<'a> {
     if let Some((index, ch)) = self.indentation.chars().enumerate().find(|(_, ch)| *ch != ' ') {
       return Err(err_unexpected_indentation_character(ch, self.line, index + 1));
     }
-    self.tokens.push(Token::Indentation(self.indentation.len()));
+    self.tokens.push(Token::Indentation {
+      length: self.indentation.len(),
+      line: self.line,
+    });
     self.indentation.clear();
     Ok(())
   }
