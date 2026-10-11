@@ -74,8 +74,7 @@ impl Node {
     &self.content
   }
 
-  /// Returns the node text.
-  /// Node text is a trimmed node content.
+  /// Returns the node text (trimmed content).
   pub fn text(&self) -> &str {
     self.content.trim()
   }
@@ -122,19 +121,15 @@ impl Node {
     self.children.len()
   }
 
-  /// Returns a document starting from this node.
-  pub fn document(&self, indentation: usize, ch: char) -> String {
+  /// Returns a formatted document starting from this node.
+  pub fn format(&self, indentation: usize) -> String {
     let mut buffer = String::new();
     if let Some(delimiter) = self.delimiter {
-      let indentation = if self.level > 1 {
-        ch.to_string().repeat((self.level - 1) * indentation)
-      } else {
-        "".to_string()
-      };
-      let _ = write!(&mut buffer, "{}{}{}{}", indentation, delimiter, self.name, self.content);
+      let indent = if self.level > 1 { " ".repeat((self.level - 1) * indentation) } else { "".to_string() };
+      let _ = write!(&mut buffer, "{}{}{}{}", indent, delimiter, self.name, self.content);
     }
     for child in &self.children {
-      let _ = write!(&mut buffer, "{}", child.document(indentation, ch));
+      let _ = write!(&mut buffer, "{}", child.format(indentation));
     }
     buffer
   }

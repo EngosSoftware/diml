@@ -240,14 +240,14 @@ fn _0018() {
 fn _0019() {
   let input = ".A\r";
   let root = parse(input).unwrap();
-  assert_eq!(input, root.document(4, ' '));
+  assert_eq!(input, root.format(4));
 }
 
 #[test]
 fn _0020() {
   let input = ".A\r\n";
   let root = parse(input).unwrap();
-  assert_eq!(input, root.document(4, ' '));
+  assert_eq!(input, root.format(4));
 }
 
 #[test]
@@ -257,7 +257,7 @@ fn _0021() {
     .C
 "#;
   let root = parse(input).unwrap();
-  assert_eq!(input, root.document(4, ' '));
+  assert_eq!(input, root.format(4));
 }
 
 #[test]
@@ -270,7 +270,7 @@ fn _0022() {
     .C
 "#;
   let root = parse(input).unwrap();
-  assert_eq!(input, root.document(4, ' '));
+  assert_eq!(input, root.format(4));
 }
 
 #[test]
