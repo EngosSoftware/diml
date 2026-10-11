@@ -63,8 +63,8 @@ pub fn err_invalid_indentation(indent: usize, multiplier: usize) -> DimlError {
 }
 
 /// Reports unexpected indentation character.
-pub fn err_unexpected_indentation_character(ch: char) -> DimlError {
-  DimlError::new(format!("unexpected indentation character '{}', at line y and column x", ch.escape_debug()))
+pub fn err_unexpected_indentation_character(ch: char, line: usize, column: usize) -> DimlError {
+  DimlError::new(format!("unexpected indentation character '{}', at line {} and column {}", ch.escape_debug(), line, column))
 }
 
 /// Reports skipped indentation level.

@@ -212,9 +212,9 @@ impl<'a> Tokenizer<'a> {
 
   /// Consumes the indentation.
   fn consume_indentation(&mut self) -> Result<()> {
-    for (_index, ch) in self.indentation.chars().enumerate() {
+    for (index, ch) in self.indentation.chars().enumerate() {
       if ch != ' ' {
-        return Err(err_unexpected_indentation_character(ch));
+        return Err(err_unexpected_indentation_character(ch, self.row, index + 1));
       }
     }
     self.tokens.push(Token::Indentation(self.indentation.len()));
