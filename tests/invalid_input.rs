@@ -173,14 +173,20 @@ fn _0020() {
 fn _0021() {
   // Skipped indentation level when nesting.
   let input = ".A\n  .B\n      .C\n";
-  assert_eq!("skipped indentation level, jump from level 2 to level 4", parse(input).unwrap_err().to_string());
+  assert_eq!(
+    "skipped indentation level, jump from level 2 to level 4 at line 3, column 6",
+    parse(input).unwrap_err().to_string()
+  );
 }
 
 #[test]
 fn _0022() {
   // Skipped indentation level after continuation in a lower level.
   let input = ".A\n  .B\n.C\n    .D\n";
-  assert_eq!("skipped indentation level, jump from level 1 to level 3", parse(input).unwrap_err().to_string());
+  assert_eq!(
+    "skipped indentation level, jump from level 1 to level 3 at line 4, column 4",
+    parse(input).unwrap_err().to_string()
+  );
 }
 
 #[test]
@@ -192,7 +198,7 @@ fn _0023() {
     Token::NodeContent("\n".to_string()),
   ];
   assert_eq!(
-    "skipped indentation level, jump from level 0 to level 2",
+    "skipped indentation level, jump from level 0 to level 2 at line 1, column 4",
     Parser::new(tokens).parse().unwrap_err().to_string()
   )
 }

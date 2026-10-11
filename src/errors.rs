@@ -70,6 +70,8 @@ pub fn err_unexpected_indentation_character(ch: char, line: usize, column: usize
 }
 
 /// Reports skipped indentation level.
-pub fn err_skipped_indentation_level(previous_level: usize, level: usize) -> DimlError {
-  DimlError::new(format!("skipped indentation level, jump from level {previous_level} to level {level}"))
+pub fn err_skipped_indentation_level(previous_level: usize, level: usize, line: usize, column: usize) -> DimlError {
+  DimlError::new(format!(
+    "skipped indentation level, jump from level {previous_level} to level {level} at line {line}, column {column}"
+  ))
 }

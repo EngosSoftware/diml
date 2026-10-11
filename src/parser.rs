@@ -114,7 +114,7 @@ impl Parser {
     let level = self.indentation.checked_div(self.multiplier).unwrap_or(0) + 1;
     let previous_level = self.nodes.last().map_or(0, |node| node.level());
     if level > previous_level + 1 {
-      return Err(err_skipped_indentation_level(previous_level, level));
+      return Err(err_skipped_indentation_level(previous_level, level, self.indentation_line, self.indentation));
     }
     let node = Node::new(level, self.delimiter, self.name.clone(), content);
     self.nodes.push(node);
