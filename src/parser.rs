@@ -109,7 +109,7 @@ impl Parser {
   /// Creates a new node and adds it to the parsed node list.
   fn create_node(&mut self, content: String) -> Result<()> {
     if self.multiplier > 0 && !self.indentation.is_multiple_of(self.multiplier) {
-      return Err(err_invalid_indentation(self.indentation, self.multiplier, 0, 0));
+      return Err(err_invalid_indentation(self.indentation, self.multiplier, self.indentation_line, self.indentation));
     }
     let level = self.indentation.checked_div(self.multiplier).unwrap_or(0) + 1;
     let previous_level = self.nodes.last().map_or(0, |node| node.level());
