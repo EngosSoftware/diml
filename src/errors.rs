@@ -43,17 +43,17 @@ pub fn err_missing_newline(line: usize, col: usize) -> DimlError {
 }
 
 /// Reports expected node name token.
-pub fn err_expected_node_name() -> DimlError {
+pub fn err_expected_node_name_token() -> DimlError {
   DimlError::new("expected node name token")
 }
 
 /// Reports expected node content token.
-pub fn err_expected_node_content() -> DimlError {
+pub fn err_expected_node_content_token() -> DimlError {
   DimlError::new("expected node content token")
 }
 
 /// Reports expected indentation token.
-pub fn err_expected_indentation() -> DimlError {
+pub fn err_expected_indentation_token() -> DimlError {
   DimlError::new("expected indentation token")
 }
 

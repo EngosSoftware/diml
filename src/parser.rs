@@ -60,7 +60,7 @@ impl Parser {
             self.last_indent = indent;
             self.state = ParserState::NodeName;
           } else {
-            return Err(err_expected_indentation());
+            return Err(err_expected_indentation_token());
           }
         }
         ParserState::NodeName => {
@@ -69,7 +69,7 @@ impl Parser {
             self.last_delimiter = delimiter.into();
             self.state = ParserState::NodeContent;
           } else {
-            return Err(err_expected_node_name());
+            return Err(err_expected_node_name_token());
           }
         }
         ParserState::NodeContent => {
@@ -80,7 +80,7 @@ impl Parser {
             self.last_delimiter = None;
             self.state = ParserState::Indentation;
           } else {
-            return Err(err_expected_node_content());
+            return Err(err_expected_node_content_token());
           }
         }
       }
