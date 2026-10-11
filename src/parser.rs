@@ -27,8 +27,8 @@ pub struct Parser {
   tokens: IntoIter<Token>,
   nodes: Vec<Node>,
   stack: Vec<Node>,
-  first_indent: usize,
-  last_indent: usize,
+  first_indentation: usize,
+  last_indentation: usize,
   last_name: String,
   last_delimiter: Option<char>,
 }
@@ -41,8 +41,8 @@ impl Parser {
       tokens: tokens.into_iter(),
       nodes: vec![],
       stack: vec![],
-      first_indent: 0,
-      last_indent: 0,
+      first_indentation: 0,
+      last_indentation: 0,
       last_name: "".to_string(),
       last_delimiter: None,
     }
@@ -54,10 +54,10 @@ impl Parser {
       match self.state {
         ParserState::Indentation => {
           if let Token::Indentation(indent) = token {
-            if self.first_indent == 0 && indent > 0 {
-              self.first_indent = indent;
+            if self.first_indentation == 0 && indent > 0 {
+              self.first_indentation = indent;
             }
-            self.last_indent = indent;
+            self.last_indentation = indent;
             self.state = ParserState::NodeName;
           } else {
             return Err(err_expected_indentation_token());
@@ -75,8 +75,8 @@ impl Parser {
         ParserState::NodeContent => {
           if let Token::NodeContent(content) = token {
             let last_name = take(&mut self.last_name);
-            self.create_node(self.last_indent, self.last_delimiter, last_name, content)?;
-            self.last_indent = 0;
+            self.create_node(self.last_indentation, self.last_delimiter, last_name, content)?;
+            self.last_indentation = 0;
             self.last_delimiter = None;
             self.state = ParserState::Indentation;
           } else {
@@ -104,9 +104,9 @@ impl Parser {
 
   /// Creates a new node and adds it to the parsed node list.
   fn create_node(&mut self, indent: usize, delimiter: Option<char>, name: String, content: String) -> Result<()> {
-    let multiplier = self.first_indent;
+    let multiplier = self.first_indentation;
     if multiplier > 0 && !indent.is_multiple_of(multiplier) {
-      return Err(err_invalid_indentation(indent, multiplier));
+      return Err(err_invalid_indentation(indent, multiplier, 0, 0));
     }
     let level = indent.checked_div(multiplier).unwrap_or(0) + 1;
     let previous_level = self.nodes.last().map_or(0, |node| node.level());
