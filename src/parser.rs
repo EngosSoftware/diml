@@ -106,7 +106,7 @@ impl Parser {
   fn create_node(&mut self, indent: usize, delimiter: Option<char>, name: String, content: String) -> Result<()> {
     let multiplier = self.first_indent;
     if multiplier > 0 && !indent.is_multiple_of(multiplier) {
-      return Err(err_malformed_indentation(indent, multiplier));
+      return Err(err_invalid_indentation(indent, multiplier));
     }
     let level = indent.checked_div(multiplier).unwrap_or(0) + 1;
     let previous_level = self.nodes.last().map_or(0, |node| node.level());

@@ -57,9 +57,9 @@ pub fn err_expected_indentation() -> DimlError {
   DimlError::new("expected indentation token")
 }
 
-/// Reports malformed indentation.
-pub fn err_malformed_indentation(indent: usize, multiplier: usize) -> DimlError {
-  DimlError::new(&format!("malformed indentation {indent}, expected multiplication of {multiplier}"))
+/// Reports invalid indentation.
+pub fn err_invalid_indentation(indent: usize, multiplier: usize) -> DimlError {
+  DimlError::new(&format!("invalid indentation {indent}, expected multiplication of {multiplier} spaces"))
 }
 
 /// Reports inconsistent indentation.

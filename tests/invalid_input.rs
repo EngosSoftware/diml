@@ -91,7 +91,7 @@ fn _0012() {
     .C
    .D
 "#;
-  assert_eq!("malformed indentation 3, expected multiplication of 4", parse(input).unwrap_err().to_string());
+  assert_eq!("invalid indentation 3, expected multiplication of 4 spaces", parse(input).unwrap_err().to_string());
 }
 
 #[test]
@@ -102,7 +102,7 @@ fn _0013() {
     .C
     .D
 "#;
-  assert_eq!("malformed indentation 4, expected multiplication of 8", parse(input).unwrap_err().to_string());
+  assert_eq!("invalid indentation 4, expected multiplication of 8 spaces", parse(input).unwrap_err().to_string());
 }
 
 #[test]
