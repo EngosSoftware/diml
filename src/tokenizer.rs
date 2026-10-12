@@ -88,7 +88,7 @@ impl Parser {
           // Process the beginning of the document.
           match current_char {
             None => return Err(err_empty_input()),
-            Some(ch) if self.is_allowed_char(ch) => {
+            Some(ch) if is_allowed_char(ch) => {
               delimiter = Some(ch);
               self.token.line = line;
               self.token.indentation = 0;
@@ -146,7 +146,7 @@ impl Parser {
               self.node_content.push(ch);
               state = State::NodeContent;
             }
-            Some(ch) if self.is_allowed_char(ch) => {
+            Some(ch) if is_allowed_char(ch) => {
               self.node_name.push(ch);
             }
             Some(ch) => {
@@ -222,9 +222,9 @@ impl Parser {
     self.token.content = take(&mut self.node_content);
     self.tokens.push(take(&mut self.token));
   }
+}
 
-  /// Returns `true` when the specified character is allowed as a delimiter or in a node name.
-  fn is_allowed_char(&self, ch: char) -> bool {
-    !(ch.is_control() || ch.is_whitespace())
-  }
+/// Returns `true` when the specified character is allowed as a delimiter or in a node name.
+fn is_allowed_char(ch: char) -> bool {
+  !(ch.is_control() || ch.is_whitespace())
 }
