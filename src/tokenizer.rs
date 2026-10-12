@@ -37,8 +37,6 @@ enum State {
 pub struct Parser {
   /// The content of currently processed indentation.
   indentation: String,
-  /// Delimiter used in processed document.
-  delimiter: Option<char>,
   /// The name of currently processed node.
   node_name: String,
   /// The content of currently processed node.
@@ -54,7 +52,6 @@ impl Parser {
   pub fn new() -> Self {
     Self {
       indentation: "".to_string(),
-      delimiter: None,
       node_name: "".to_string(),
       node_content: "".to_string(),
       token: Default::default(),
@@ -67,6 +64,7 @@ impl Parser {
     let mut state = State::Start; // parsing state
     let mut line = 1; // current line in parsed input
     let mut column = 0; // current character position in parsed input
+    let mut delimiter = None; // current delimiter
     let mut chars = input.chars().annotated();
     loop {
       let (current_char, line_ending) = if let Some(annotated_char) = chars.next() {
@@ -91,7 +89,7 @@ impl Parser {
           match current_char {
             None => return Err(err_empty_input()),
             Some(ch) if self.is_allowed_char(ch) => {
-              self.delimiter = Some(ch);
+              delimiter = Some(ch);
               self.token.line = line;
               self.token.indentation = 0;
               state = State::NodeName;
@@ -109,7 +107,7 @@ impl Parser {
               self.consume_node_content();
               break;
             }
-            ch if self.delimiter == ch => {
+            ch if delimiter == ch => {
               self.consume_node_content();
               self.token.line = line;
               self.token.indentation = 0;
@@ -139,12 +137,12 @@ impl Parser {
             Some(LF) => {
               line += 1;
               column = 0;
-              self.consume_node_name();
+              self.consume_node_name(delimiter);
               self.node_content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
               state = State::NewLine;
             }
             Some(ch) if ch.is_whitespace() => {
-              self.consume_node_name();
+              self.consume_node_name(delimiter);
               self.node_content.push(ch);
               state = State::NodeContent;
             }
@@ -160,7 +158,7 @@ impl Parser {
           // Process the indentation.
           match current_char {
             None => return Err(err_missing_newline(line, column + 1)),
-            ch if self.delimiter == ch => {
+            ch if delimiter == ch => {
               self.consume_node_content();
               self.consume_indentation(line)?;
               state = State::NodeName;
@@ -214,8 +212,8 @@ impl Parser {
   }
 
   /// Consumes the node name.
-  fn consume_node_name(&mut self) {
-    self.token.delimiter = self.delimiter;
+  fn consume_node_name(&mut self, delimiter: Option<char>) {
+    self.token.delimiter = delimiter;
     self.token.name = take(&mut self.node_name);
   }
 
