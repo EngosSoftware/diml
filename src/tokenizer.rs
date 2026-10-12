@@ -39,12 +39,6 @@ pub struct Parser {
   line: usize,
   /// Current column position in processed content.
   column: usize,
-  /// Current tokenizing state.
-  state: State,
-  /// Currently processed character.
-  current_char: Option<char>,
-  /// Last parsed line ending.
-  line_ending: Option<LineEnding>,
   /// The content of currently processed indentation.
   indentation: String,
   /// Delimiter used in processed document.
@@ -65,9 +59,6 @@ impl Parser {
     Self {
       line: 1,
       column: 0,
-      state: State::Start,
-      current_char: None,
-      line_ending: None,
       indentation: "".to_string(),
       delimiter: None,
       node_name: "".to_string(),
@@ -79,9 +70,10 @@ impl Parser {
 
   /// Tokenizes the input text.
   pub fn tokenize(mut self, input: &str) -> Result<Vec<Token>> {
+    let mut state = State::Start;
     let mut chars = input.chars().annotated();
     loop {
-      (self.current_char, self.line_ending) = if let Some(annotated_char) = chars.next() {
+      let (current_char, line_ending) = if let Some(annotated_char) = chars.next() {
         match annotated_char {
           AnnotatedChar::Character(ch, line, column) => {
             self.line = line;
@@ -97,26 +89,26 @@ impl Parser {
       } else {
         (None, None)
       };
-      match self.state {
+      match state {
         State::Start => {
           // Process the beginning of the document.
-          match self.current_char {
+          match current_char {
             None => return Err(err_empty_input()),
             Some(ch) if self.is_allowed_char(ch) => {
               self.delimiter = Some(ch);
               self.token.line = self.line;
               self.token.indentation = 0;
-              self.state = State::NodeName;
+              state = State::NodeName;
             }
             Some(ch) => {
-              let ch = if ch == LF { self.line_ending.unwrap_or(LineEnding::Lf).first() } else { ch };
+              let ch = if ch == LF { line_ending.unwrap_or(LineEnding::Lf).first() } else { ch };
               return Err(err_unexpected_character(ch, self.line, self.column));
             }
           }
         }
         State::NewLine => {
           // Process the beginning of the line.
-          match self.current_char {
+          match current_char {
             None => {
               self.consume_node_content();
               break;
@@ -125,38 +117,38 @@ impl Parser {
               self.consume_node_content();
               self.token.line = self.line;
               self.token.indentation = 0;
-              self.state = State::NodeName;
+              state = State::NodeName;
             }
             Some(LF) => {
               self.next_line();
-              self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
+              self.node_content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
             }
             Some(ch) if ch.is_whitespace() => {
               self.indentation.push(ch);
-              self.state = State::Indentation;
+              state = State::Indentation;
             }
             Some(ch) => {
               self.node_content.push(ch);
-              self.state = State::NodeContent;
+              state = State::NodeContent;
             }
           }
         }
         State::NodeName => {
           // Process the node name.
-          match self.current_char {
+          match current_char {
             None => {
               return Err(err_missing_newline(self.line, self.column + 1));
             }
             Some(LF) => {
               self.next_line();
               self.consume_node_name();
-              self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
-              self.state = State::NewLine;
+              self.node_content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+              state = State::NewLine;
             }
             Some(ch) if ch.is_whitespace() => {
               self.consume_node_name();
               self.node_content.push(ch);
-              self.state = State::NodeContent;
+              state = State::NodeContent;
             }
             Some(ch) if self.is_allowed_char(ch) => {
               self.node_name.push(ch);
@@ -168,19 +160,19 @@ impl Parser {
         }
         State::Indentation => {
           // Process the indentation.
-          match self.current_char {
+          match current_char {
             None => return Err(err_missing_newline(self.line, self.column + 1)),
             Some(ch) if self.is_delimiter(ch) => {
               self.consume_node_content();
               self.consume_indentation()?;
-              self.state = State::NodeName;
+              state = State::NodeName;
             }
             Some(LF) => {
               self.next_line();
               self.node_content.push_str(&self.indentation);
-              self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
+              self.node_content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
               self.indentation.clear();
-              self.state = State::NewLine;
+              state = State::NewLine;
             }
             Some(ch) if ch.is_whitespace() => {
               self.indentation.push(ch);
@@ -189,18 +181,18 @@ impl Parser {
               self.node_content.push_str(&self.indentation);
               self.node_content.push(ch);
               self.indentation.clear();
-              self.state = State::NodeContent;
+              state = State::NodeContent;
             }
           }
         }
         State::NodeContent => {
           // Process the content.
-          match self.current_char {
+          match current_char {
             None => return Err(err_missing_newline(self.line, self.column + 1)),
             Some(LF) => {
               self.next_line();
-              self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
-              self.state = State::NewLine
+              self.node_content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+              state = State::NewLine
             }
             Some(ch) => self.node_content.push(ch),
           }
