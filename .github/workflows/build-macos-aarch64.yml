@@ -17,6 +17,6 @@ jobs:
         with:
           targets: aarch64-apple-darwin
       - run: cargo fmt --check
-      - run: cargo clippy --all-targets
+      - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
       - run: cargo build --release --target=aarch64-apple-darwin

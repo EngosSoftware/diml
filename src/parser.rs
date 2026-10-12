@@ -22,9 +22,13 @@ enum ParserState {
 
 /// Parser.
 pub struct Parser {
+  /// Parser state.
   state: ParserState,
+  /// List of tokens to be parsed.
   tokens: IntoIter<Token>,
+  /// List of parsed nodes.
   nodes: Vec<Node>,
+  /// Stack of parsed nodes.
   stack: Vec<Node>,
   /// Length of the indentation of the first node.
   multiplier: usize,
