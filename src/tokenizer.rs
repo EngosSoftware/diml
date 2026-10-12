@@ -35,10 +35,6 @@ enum State {
 
 /// Tokenizer.
 pub struct Parser {
-  /// Current line position in processed input.
-  line: usize,
-  /// Current column position in processed content.
-  column: usize,
   /// The content of currently processed indentation.
   indentation: String,
   /// Delimiter used in processed document.
@@ -57,8 +53,6 @@ impl Parser {
   /// Creates a new instance of the tokenizer.
   pub fn new() -> Self {
     Self {
-      line: 1,
-      column: 0,
       indentation: "".to_string(),
       delimiter: None,
       node_name: "".to_string(),
@@ -70,19 +64,21 @@ impl Parser {
 
   /// Tokenizes the input text.
   pub fn tokenize(mut self, input: &str) -> Result<Vec<Token>> {
-    let mut state = State::Start;
+    let mut state = State::Start; // parsing state
+    let mut line = 1; // current line in parsed input
+    let mut column = 0; // current character position in parsed input
     let mut chars = input.chars().annotated();
     loop {
       let (current_char, line_ending) = if let Some(annotated_char) = chars.next() {
         match annotated_char {
-          AnnotatedChar::Character(ch, line, column) => {
-            self.line = line;
-            self.column = column;
+          AnnotatedChar::Character(ch, row, col) => {
+            line = row;
+            column = col;
             (Some(ch), None)
           }
-          AnnotatedChar::LineEnding(line_ending, line, column) => {
-            self.line = line;
-            self.column = column;
+          AnnotatedChar::LineEnding(line_ending, row, col) => {
+            line = row;
+            column = col;
             (Some(LF), Some(line_ending))
           }
         }
@@ -96,13 +92,13 @@ impl Parser {
             None => return Err(err_empty_input()),
             Some(ch) if self.is_allowed_char(ch) => {
               self.delimiter = Some(ch);
-              self.token.line = self.line;
+              self.token.line = line;
               self.token.indentation = 0;
               state = State::NodeName;
             }
             Some(ch) => {
               let ch = if ch == LF { line_ending.unwrap_or(LineEnding::Lf).first() } else { ch };
-              return Err(err_unexpected_character(ch, self.line, self.column));
+              return Err(err_unexpected_character(ch, line, column));
             }
           }
         }
@@ -113,14 +109,15 @@ impl Parser {
               self.consume_node_content();
               break;
             }
-            Some(ch) if self.is_delimiter(ch) => {
+            ch if self.delimiter == ch => {
               self.consume_node_content();
-              self.token.line = self.line;
+              self.token.line = line;
               self.token.indentation = 0;
               state = State::NodeName;
             }
             Some(LF) => {
-              self.next_line();
+              line += 1;
+              column = 0;
               self.node_content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
             }
             Some(ch) if ch.is_whitespace() => {
@@ -137,10 +134,11 @@ impl Parser {
           // Process the node name.
           match current_char {
             None => {
-              return Err(err_missing_newline(self.line, self.column + 1));
+              return Err(err_missing_newline(line, column + 1));
             }
             Some(LF) => {
-              self.next_line();
+              line += 1;
+              column = 0;
               self.consume_node_name();
               self.node_content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
               state = State::NewLine;
@@ -154,21 +152,22 @@ impl Parser {
               self.node_name.push(ch);
             }
             Some(ch) => {
-              return Err(err_unexpected_character(ch, self.line, self.column));
+              return Err(err_unexpected_character(ch, line, column));
             }
           }
         }
         State::Indentation => {
           // Process the indentation.
           match current_char {
-            None => return Err(err_missing_newline(self.line, self.column + 1)),
-            Some(ch) if self.is_delimiter(ch) => {
+            None => return Err(err_missing_newline(line, column + 1)),
+            ch if self.delimiter == ch => {
               self.consume_node_content();
-              self.consume_indentation()?;
+              self.consume_indentation(line)?;
               state = State::NodeName;
             }
             Some(LF) => {
-              self.next_line();
+              line += 1;
+              column = 0;
               self.node_content.push_str(&self.indentation);
               self.node_content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
               self.indentation.clear();
@@ -188,9 +187,10 @@ impl Parser {
         State::NodeContent => {
           // Process the content.
           match current_char {
-            None => return Err(err_missing_newline(self.line, self.column + 1)),
+            None => return Err(err_missing_newline(line, column + 1)),
             Some(LF) => {
-              self.next_line();
+              line += 1;
+              column = 0;
               self.node_content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
               state = State::NewLine
             }
@@ -203,11 +203,11 @@ impl Parser {
   }
 
   /// Consumes the indentation.
-  fn consume_indentation(&mut self) -> Result<()> {
+  fn consume_indentation(&mut self, line: usize) -> Result<()> {
     if let Some((index, ch)) = self.indentation.chars().enumerate().find(|(_, ch)| *ch != ' ') {
-      return Err(err_unexpected_indentation_character(ch, self.line, index + 1));
+      return Err(err_unexpected_indentation_character(ch, line, index + 1));
     }
-    self.token.line = self.line;
+    self.token.line = line;
     self.token.indentation = self.indentation.len();
     self.indentation.clear();
     Ok(())
@@ -228,16 +228,5 @@ impl Parser {
   /// Returns `true` when the specified character is allowed as a delimiter or in a node name.
   fn is_allowed_char(&self, ch: char) -> bool {
     !(ch.is_control() || ch.is_whitespace())
-  }
-
-  /// Returns `true` when the specified character is equal to recognized delimiter.
-  fn is_delimiter(&self, ch: char) -> bool {
-    self.delimiter == Some(ch)
-  }
-
-  /// Advances the counter to the next line.
-  fn next_line(&mut self) {
-    self.line += 1;
-    self.column = 0;
   }
 }
