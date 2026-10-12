@@ -2,7 +2,7 @@
 
 use crate::Node;
 use crate::errors::*;
-use crate::tokenizer::{Token, Tokenizer};
+use crate::tokenizer::{Parser, Token};
 
 /// Parses input text.
 pub fn parse(input: &str) -> Result<Node> {
@@ -15,7 +15,7 @@ pub fn parse(input: &str) -> Result<Node> {
     delimiter,
     name,
     content,
-  } in Tokenizer::new(input).tokenize()?
+  } in Parser::new().tokenize(input)?
   {
     if multiplier == 0 && indentation > 0 {
       multiplier = indentation;

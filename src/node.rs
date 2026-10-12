@@ -1,7 +1,7 @@
 //! # Tree node implementation
 
 /// Tree node.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Node {
   /// Indentation level of the node.
   /// Root (virtual) node has level `0`.

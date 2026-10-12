@@ -34,15 +34,13 @@ enum State {
 }
 
 /// Tokenizer.
-pub struct Tokenizer<'a> {
+pub struct Parser {
   /// Current line position in processed input.
   line: usize,
   /// Current column position in processed content.
   column: usize,
   /// Current tokenizing state.
   state: State,
-  /// Input characters.
-  input: &'a str,
   /// Currently processed character.
   current_char: Option<char>,
   /// Last parsed line ending.
@@ -61,14 +59,13 @@ pub struct Tokenizer<'a> {
   tokens: Vec<Token>,
 }
 
-impl<'a> Tokenizer<'a> {
+impl Parser {
   /// Creates a new instance of the tokenizer.
-  pub fn new(input: &'a str) -> Self {
+  pub fn new() -> Self {
     Self {
       line: 1,
       column: 0,
       state: State::Start,
-      input,
       current_char: None,
       line_ending: None,
       indentation: "".to_string(),
@@ -81,8 +78,8 @@ impl<'a> Tokenizer<'a> {
   }
 
   /// Tokenizes the input text.
-  pub fn tokenize(mut self) -> Result<Vec<Token>> {
-    let mut chars = self.input.chars().annotated();
+  pub fn tokenize(mut self, input: &str) -> Result<Vec<Token>> {
+    let mut chars = input.chars().annotated();
     loop {
       (self.current_char, self.line_ending) = if let Some(annotated_char) = chars.next() {
         match annotated_char {
