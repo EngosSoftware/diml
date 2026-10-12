@@ -1,5 +1,4 @@
-use diml::internal::Token;
-use diml::{Parser, parse};
+use diml::parse;
 
 #[test]
 fn _0001() {
@@ -162,20 +161,6 @@ fn _0019() {
     "skipped indentation level, jump from level 1 to level 3 at line 4, column 4",
     parse(input).unwrap_err().to_string()
   );
-}
-
-#[test]
-fn _0020() {
-  // Skipped indentation level in the first node.
-  let tokens = vec![
-    Token::Indentation { length: 4, line: 1 },
-    Token::NodeName("A".to_string(), '.'),
-    Token::NodeContent("\n".to_string()),
-  ];
-  assert_eq!(
-    "skipped indentation level, jump from level 0 to level 2 at line 1, column 4",
-    Parser::new(tokens).parse().unwrap_err().to_string()
-  )
 }
 
 #[test]

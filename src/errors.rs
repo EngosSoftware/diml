@@ -59,12 +59,6 @@ pub enum DimlError {
     /// Column number.
     column: usize,
   },
-  /// Reports expected node name token.
-  ExpectedNodeNameToken,
-  /// Reports expected node content token.
-  ExpectedNodeContentToken,
-  /// Reports expected indentation token.
-  ExpectedIndentationToken,
 }
 
 impl Display for DimlError {
@@ -91,15 +85,6 @@ impl Display for DimlError {
       }
       DimlError::SkippedIndentationLevel { previous, level, line, column } => {
         write!(f, "skipped indentation level, jump from level {previous} to level {level} at line {line}, column {column}")
-      }
-      DimlError::ExpectedNodeNameToken => {
-        write!(f, "expected node name token")
-      }
-      DimlError::ExpectedNodeContentToken => {
-        write!(f, "expected node content token")
-      }
-      DimlError::ExpectedIndentationToken => {
-        write!(f, "expected indentation token")
       }
     }
   }
@@ -136,19 +121,4 @@ pub fn err_unexpected_indentation_character(ch: char, line: usize, column: usize
 /// Reports skipped indentation level.
 pub fn err_skipped_indentation_level(previous: usize, level: usize, line: usize, column: usize) -> DimlError {
   DimlError::SkippedIndentationLevel { previous, level, line, column }
-}
-
-/// Reports expected node name token.
-pub fn err_expected_node_name_token() -> DimlError {
-  DimlError::ExpectedNodeNameToken
-}
-
-/// Reports expected node content token.
-pub fn err_expected_node_content_token() -> DimlError {
-  DimlError::ExpectedNodeContentToken
-}
-
-/// Reports expected indentation token.
-pub fn err_expected_indentation_token() -> DimlError {
-  DimlError::ExpectedIndentationToken
 }
