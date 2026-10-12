@@ -299,3 +299,16 @@ fn _0023() {
   assert_eq!("c", node_c.text());
   assert_eq!(" c\n", node_c.content());
 }
+
+#[test]
+fn _0024() {
+  // Control characters are allowed in the content.
+  let input = ".A ab\u{7f}cd\n";
+  let root = parse(input).unwrap();
+  assert_eq!(1, root.children().count());
+  let node = root.children().next().unwrap();
+  assert_eq!('.', node.delimiter().unwrap());
+  assert_eq!("A", node.name());
+  assert_eq!(" ab\u{7f}cd\n", node.content());
+  assert_eq!("ab\u{7f}cd", node.text());
+}

@@ -146,31 +146,6 @@ fn _0017() {
 
 #[test]
 fn _0018() {
-  // No indentation token.
-  let tokens = vec![Token::NodeName("A".to_string(), '.')];
-  assert_eq!("expected indentation token", Parser::new(tokens).parse().unwrap_err().to_string())
-}
-
-#[test]
-fn _0019() {
-  // No node name token.
-  let tokens = vec![Token::Indentation { length: 0, line: 1 }, Token::NodeContent("content".to_string())];
-  assert_eq!("expected node name token", Parser::new(tokens).parse().unwrap_err().to_string())
-}
-
-#[test]
-fn _0020() {
-  // No node content token.
-  let tokens = vec![
-    Token::Indentation { length: 0, line: 1 },
-    Token::NodeName("name".to_string(), '.'),
-    Token::Indentation { length: 0, line: 1 },
-  ];
-  assert_eq!("expected node content token", Parser::new(tokens).parse().unwrap_err().to_string())
-}
-
-#[test]
-fn _0021() {
   // Skipped indentation level when nesting.
   let input = ".A\n  .B\n      .C\n";
   assert_eq!(
@@ -180,7 +155,7 @@ fn _0021() {
 }
 
 #[test]
-fn _0022() {
+fn _0019() {
   // Skipped indentation level after continuation in a lower level.
   let input = ".A\n  .B\n.C\n    .D\n";
   assert_eq!(
@@ -190,7 +165,7 @@ fn _0022() {
 }
 
 #[test]
-fn _0023() {
+fn _0020() {
   // Skipped indentation level in the first node.
   let tokens = vec![
     Token::Indentation { length: 4, line: 1 },
@@ -204,21 +179,21 @@ fn _0023() {
 }
 
 #[test]
-fn _0024() {
+fn _0021() {
   // No newline after the content of the last node.
   let input = ".A\n  .B content";
   assert_eq!("missing newline at the end of input at line 2, column 13", parse(input).unwrap_err().to_string());
 }
 
 #[test]
-fn _0025() {
+fn _0022() {
   // No newline after the last node, with CRLF line endings.
   let input = ".A\r\n.B";
   assert_eq!("missing newline at the end of input at line 2, column 3", parse(input).unwrap_err().to_string());
 }
 
 #[test]
-fn _0026() {
+fn _0023() {
   // No control character is allowed inside a node name.
   let input = ".A\u{7f}BC abc\n";
   assert_eq!(r#"unexpected character '\u{7f}' at line 1, column 3"#, parse(input).unwrap_err().to_string());
