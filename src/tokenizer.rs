@@ -4,30 +4,22 @@ use crate::errors::*;
 use normalized_line_endings::{Annotated, AnnotatedChar, LF, LineEnding};
 use std::mem::take;
 
-/// Tokenizes input text.
-pub fn tokenize(input: &str) -> Result<Vec<Token>> {
-  Tokenizer::new(input).tokenize()
-}
-
-/// Tokens.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Token {
-  /// Node name token with delimiter character.
-  NodeName(String, char),
-  /// Node content token.
-  NodeContent(String),
-  /// Indentation token with the indentation width
-  /// and a line where the indentation starts.
-  Indentation {
-    /// Length of the indentation (number of spaces).
-    length: usize,
-    /// Line number where the indentation starts.
-    line: usize,
-  },
+/// Token.
+#[derive(Default, Debug)]
+pub struct Token {
+  /// Line number where the node starts.
+  pub line: usize,
+  /// Indentation length.
+  pub indentation: usize,
+  /// Delimiter character.
+  pub delimiter: Option<char>,
+  /// Node name.
+  pub name: String,
+  /// Node content.
+  pub content: String,
 }
 
 /// Tokenizer state.
-#[derive(Copy, Clone)]
 enum State {
   /// At the beginning of the input.
   Start,
@@ -63,7 +55,9 @@ pub struct Tokenizer<'a> {
   node_name: String,
   /// The content of currently processed node.
   node_content: String,
-  /// List of already processed tokens.
+  /// Current token.
+  token: Token,
+  /// List of recognized tokens.
   tokens: Vec<Token>,
 }
 
@@ -81,6 +75,7 @@ impl<'a> Tokenizer<'a> {
       delimiter: None,
       node_name: "".to_string(),
       node_content: "".to_string(),
+      token: Default::default(),
       tokens: vec![],
     }
   }
@@ -112,7 +107,8 @@ impl<'a> Tokenizer<'a> {
             None => return Err(err_empty_input()),
             Some(ch) if self.is_allowed_char(ch) => {
               self.delimiter = Some(ch);
-              self.tokens.push(Token::Indentation { length: 0, line: self.line });
+              self.token.line = self.line;
+              self.token.indentation = 0;
               self.state = State::NodeName;
             }
             Some(ch) => {
@@ -130,7 +126,8 @@ impl<'a> Tokenizer<'a> {
             }
             Some(ch) if self.is_delimiter(ch) => {
               self.consume_node_content();
-              self.tokens.push(Token::Indentation { length: 0, line: self.line });
+              self.token.line = self.line;
+              self.token.indentation = 0;
               self.state = State::NodeName;
             }
             Some(LF) => {
@@ -221,22 +218,22 @@ impl<'a> Tokenizer<'a> {
     if let Some((index, ch)) = self.indentation.chars().enumerate().find(|(_, ch)| *ch != ' ') {
       return Err(err_unexpected_indentation_character(ch, self.line, index + 1));
     }
-    self.tokens.push(Token::Indentation {
-      length: self.indentation.len(),
-      line: self.line,
-    });
+    self.token.line = self.line;
+    self.token.indentation = self.indentation.len();
     self.indentation.clear();
     Ok(())
   }
 
   /// Consumes the node name.
   fn consume_node_name(&mut self) {
-    self.tokens.push(Token::NodeName(take(&mut self.node_name), self.delimiter.unwrap_or_default()));
+    self.token.delimiter = self.delimiter;
+    self.token.name = take(&mut self.node_name);
   }
 
   /// Consumes the node content.
   fn consume_node_content(&mut self) {
-    self.tokens.push(Token::NodeContent(take(&mut self.node_content)));
+    self.token.content = take(&mut self.node_content);
+    self.tokens.push(take(&mut self.token));
   }
 
   /// Returns `true` when the specified character is allowed as a delimiter or in a node name.
