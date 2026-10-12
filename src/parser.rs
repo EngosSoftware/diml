@@ -71,7 +71,7 @@ impl Parser {
             self.indentation_line = line;
             self.state = ParserState::NodeName;
           } else {
-            unreachable!() // means tokenizer error when reached
+            unreachable!("no indentation token") // means tokenizer error when reached
           }
         }
         ParserState::NodeName => {
@@ -80,7 +80,7 @@ impl Parser {
             self.delimiter = delimiter.into();
             self.state = ParserState::NodeContent;
           } else {
-            unreachable!() // means tokenizer error when reached
+            unreachable!("no node name token") // means tokenizer error when reached
           }
         }
         ParserState::NodeContent => {
@@ -88,7 +88,7 @@ impl Parser {
             self.create_node(content)?;
             self.state = ParserState::Indentation;
           } else {
-            unreachable!() // means tokenizer error when reached
+            unreachable!("no node content token") // means tokenizer error when reached
           }
         }
       }
@@ -131,21 +131,21 @@ mod tests {
   use super::*;
 
   #[test]
-  #[should_panic]
+  #[should_panic(expected = "no indentation token")]
   fn no_indentation_token() {
     let tokens = vec![Token::NodeName("A".to_string(), '.')];
     _ = Parser::new(tokens).parse();
   }
 
   #[test]
-  #[should_panic]
+  #[should_panic(expected = "no node name token")]
   fn no_node_name_token() {
     let tokens = vec![Token::Indentation { length: 0, line: 1 }, Token::NodeContent("content".to_string())];
     _ = Parser::new(tokens).parse();
   }
 
   #[test]
-  #[should_panic]
+  #[should_panic(expected = "no node content token")]
   fn no_node_content_token() {
     let tokens = vec![
       Token::Indentation { length: 0, line: 1 },
