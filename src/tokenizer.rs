@@ -208,9 +208,6 @@ impl<'a> Tokenizer<'a> {
               self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
               self.state = TokenizerState::NewLine
             }
-            Some(ch) if ch.is_control() => {
-              return Err(err_unexpected_character(ch, self.line, self.column));
-            }
             Some(ch) => self.node_content.push(ch),
           }
         }
