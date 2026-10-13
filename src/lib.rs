@@ -6,7 +6,7 @@
 mod errors;
 mod node;
 mod parser;
-mod tokenizer;
+mod recognizer;
 
 pub use errors::{DimlError, Result};
 pub use node::Node;

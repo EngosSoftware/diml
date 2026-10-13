@@ -2,20 +2,20 @@
 
 use crate::Node;
 use crate::errors::*;
-use crate::tokenizer::{Parser, Token};
+use crate::recognizer::{Item, recognize};
 
 /// Parses input text.
 pub fn parse(input: &str) -> Result<Node> {
   let mut nodes = vec![];
   let mut stack = vec![];
   let mut multiplier = 0;
-  for Token {
+  for Item {
     line,
     indentation,
     delimiter,
     name,
     content,
-  } in Parser::new().tokenize(input)?
+  } in recognize(input)?
   {
     if multiplier == 0 && indentation > 0 {
       multiplier = indentation;
