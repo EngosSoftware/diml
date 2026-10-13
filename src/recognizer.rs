@@ -1,7 +1,7 @@
 //! # Recognizer implementation
 
 use crate::errors::*;
-use normalized_line_endings::{Annotated, AnnotatedChar, LF, LineEnding};
+use normalized_line_endings::{Annotated, AnnotatedChar, LF};
 
 pub fn recognize(input: impl AsRef<str>) -> Result<Vec<Item>> {
   Recognizer::new().recognize(input)
@@ -96,10 +96,8 @@ impl Recognizer {
             self.new_indentation();
             self.state = State::NodeName;
           }
-          Some(ch) => {
-            let ch = if ch == LF { line_ending.unwrap_or(LineEnding::Lf).first() } else { ch };
-            return Err(err_unexpected_character(ch, self.position_line, self.position_column));
-          }
+          Some(LF) => return Err(err_unexpected_character(line_ending.unwrap().first(), self.position_line, self.position_column)),
+          Some(ch) => return Err(err_unexpected_character(ch, self.position_line, self.position_column)),
         },
         State::NewLine => match current_char {
           None => {
@@ -113,7 +111,7 @@ impl Recognizer {
           }
           Some(LF) => {
             self.new_line();
-            self.content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+            self.content.push_str(line_ending.unwrap().as_ref());
           }
           Some(ch) if ch.is_whitespace() => {
             self.indentation.push(ch);
@@ -131,7 +129,7 @@ impl Recognizer {
           Some(LF) => {
             self.new_line();
             self.consume_name();
-            self.content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+            self.content.push_str(line_ending.unwrap().as_ref());
             self.state = State::NewLine;
           }
           Some(ch) if ch.is_whitespace() => {
@@ -156,7 +154,7 @@ impl Recognizer {
           Some(LF) => {
             self.new_line();
             self.content.push_str(&self.indentation);
-            self.content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+            self.content.push_str(line_ending.unwrap().as_ref());
             self.indentation.clear();
             self.state = State::NewLine;
           }
@@ -174,7 +172,7 @@ impl Recognizer {
           None => return Err(err_missing_newline(self.position_line, self.position_column + 1)),
           Some(LF) => {
             self.new_line();
-            self.content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+            self.content.push_str(line_ending.unwrap().as_ref());
             self.state = State::NewLine
           }
           Some(ch) => self.content.push(ch),
