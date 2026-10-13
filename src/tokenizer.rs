@@ -26,9 +26,9 @@ pub enum Token {
   },
 }
 
-/// Tokenizer state.
+/// Parser state.
 #[derive(Copy, Clone)]
-enum TokenizerState {
+enum State {
   /// At the beginning of the input.
   Start,
   /// At the beginning of the line.
@@ -48,7 +48,7 @@ pub struct Tokenizer<'a> {
   /// Current column position in processed content.
   column: usize,
   /// Current tokenizing state.
-  state: TokenizerState,
+  state: State,
   /// Input characters.
   input: &'a str,
   /// Currently processed character.
@@ -73,7 +73,7 @@ impl<'a> Tokenizer<'a> {
     Self {
       line: 1,
       column: 0,
-      state: TokenizerState::Start,
+      state: State::Start,
       input,
       current_char: None,
       line_ending: None,
@@ -106,14 +106,14 @@ impl<'a> Tokenizer<'a> {
         (None, None)
       };
       match self.state {
-        TokenizerState::Start => {
+        State::Start => {
           // Process the beginning of the document.
           match self.current_char {
             None => return Err(err_empty_input()),
             Some(ch) if self.is_allowed_char(ch) => {
               self.delimiter = Some(ch);
               self.tokens.push(Token::Indentation { length: 0, line: self.line });
-              self.state = TokenizerState::NodeName;
+              self.state = State::NodeName;
             }
             Some(ch) => {
               let ch = if ch == LF { self.line_ending.unwrap_or(LineEnding::Lf).first() } else { ch };
@@ -121,7 +121,7 @@ impl<'a> Tokenizer<'a> {
             }
           }
         }
-        TokenizerState::NewLine => {
+        State::NewLine => {
           // Process the beginning of the line.
           match self.current_char {
             None => {
@@ -131,7 +131,7 @@ impl<'a> Tokenizer<'a> {
             Some(ch) if self.is_delimiter(ch) => {
               self.consume_node_content();
               self.tokens.push(Token::Indentation { length: 0, line: self.line });
-              self.state = TokenizerState::NodeName;
+              self.state = State::NodeName;
             }
             Some(LF) => {
               self.next_line();
@@ -139,15 +139,15 @@ impl<'a> Tokenizer<'a> {
             }
             Some(ch) if ch.is_whitespace() => {
               self.indentation.push(ch);
-              self.state = TokenizerState::Indentation;
+              self.state = State::Indentation;
             }
             Some(ch) => {
               self.node_content.push(ch);
-              self.state = TokenizerState::NodeContent;
+              self.state = State::NodeContent;
             }
           }
         }
-        TokenizerState::NodeName => {
+        State::NodeName => {
           // Process the node name.
           match self.current_char {
             None => {
@@ -157,12 +157,12 @@ impl<'a> Tokenizer<'a> {
               self.next_line();
               self.consume_node_name();
               self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
-              self.state = TokenizerState::NewLine;
+              self.state = State::NewLine;
             }
             Some(ch) if ch.is_whitespace() => {
               self.consume_node_name();
               self.node_content.push(ch);
-              self.state = TokenizerState::NodeContent;
+              self.state = State::NodeContent;
             }
             Some(ch) if self.is_allowed_char(ch) => {
               self.node_name.push(ch);
@@ -172,21 +172,21 @@ impl<'a> Tokenizer<'a> {
             }
           }
         }
-        TokenizerState::Indentation => {
+        State::Indentation => {
           // Process the indentation.
           match self.current_char {
             None => return Err(err_missing_newline(self.line, self.column + 1)),
             Some(ch) if self.is_delimiter(ch) => {
               self.consume_node_content();
               self.consume_indentation()?;
-              self.state = TokenizerState::NodeName;
+              self.state = State::NodeName;
             }
             Some(LF) => {
               self.next_line();
               self.node_content.push_str(&self.indentation);
               self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
               self.indentation.clear();
-              self.state = TokenizerState::NewLine;
+              self.state = State::NewLine;
             }
             Some(ch) if ch.is_whitespace() => {
               self.indentation.push(ch);
@@ -195,18 +195,18 @@ impl<'a> Tokenizer<'a> {
               self.node_content.push_str(&self.indentation);
               self.node_content.push(ch);
               self.indentation.clear();
-              self.state = TokenizerState::NodeContent;
+              self.state = State::NodeContent;
             }
           }
         }
-        TokenizerState::NodeContent => {
+        State::NodeContent => {
           // Process the content.
           match self.current_char {
             None => return Err(err_missing_newline(self.line, self.column + 1)),
             Some(LF) => {
               self.next_line();
               self.node_content.push_str(self.line_ending.unwrap_or(LineEnding::Lf).as_ref());
-              self.state = TokenizerState::NewLine
+              self.state = State::NewLine
             }
             Some(ch) => self.node_content.push(ch),
           }
