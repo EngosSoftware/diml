@@ -2,7 +2,6 @@
 
 use crate::errors::*;
 use normalized_line_endings::{Annotated, AnnotatedChar, LF, LineEnding};
-use std::mem::take;
 
 pub fn recognize(input: impl AsRef<str>) -> Result<Vec<Item>> {
   Recognizer::new().recognize(input)
@@ -94,7 +93,7 @@ impl Recognizer {
           None => return Err(err_empty_input()),
           Some(ch) if is_allowed_char(ch) => {
             self.delimiter = Some(ch);
-            new_indentation(&mut self.item, self.position_line);
+            self.new_indentation();
             self.state = State::NodeName;
           }
           Some(ch) => {
@@ -104,12 +103,12 @@ impl Recognizer {
         },
         State::NewLine => match current_char {
           None => {
-            consume_content(&mut self.items, &mut self.item, &mut self.content);
+            self.consume_content();
             break;
           }
           ch if self.delimiter == ch => {
-            consume_content(&mut self.items, &mut self.item, &mut self.content);
-            new_indentation(&mut self.item, self.position_line);
+            self.consume_content();
+            self.new_indentation();
             self.state = State::NodeName;
           }
           Some(LF) => {
@@ -131,12 +130,12 @@ impl Recognizer {
           }
           Some(LF) => {
             self.new_line();
-            consume_name(&mut self.item, &mut self.name, self.delimiter);
+            self.consume_name();
             self.content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
             self.state = State::NewLine;
           }
           Some(ch) if ch.is_whitespace() => {
-            consume_name(&mut self.item, &mut self.name, self.delimiter);
+            self.consume_name();
             self.content.push(ch);
             self.state = State::NodeContent;
           }
@@ -150,8 +149,8 @@ impl Recognizer {
         State::Indentation => match current_char {
           None => return Err(err_missing_newline(self.position_line, self.position_column + 1)),
           ch if self.delimiter == ch => {
-            consume_content(&mut self.items, &mut self.item, &mut self.content);
-            consume_indentation(&mut self.item, &mut self.indentation, self.position_line)?;
+            self.consume_content();
+            self.consume_indentation()?;
             self.state = State::NodeName;
           }
           Some(LF) => {
@@ -190,35 +189,35 @@ impl Recognizer {
     self.position_line += 1;
     self.position_column = 0;
   }
-}
 
-/// Starts an item with indentation.
-fn new_indentation(item: &mut Item, line: usize) {
-  item.indent_line = line;
-  item.indent_width = 0;
-}
-
-/// Consumes indentation.
-fn consume_indentation(item: &mut Item, indentation: &mut String, line: usize) -> Result<()> {
-  if let Some((index, ch)) = indentation.chars().enumerate().find(|(_, ch)| *ch != ' ') {
-    return Err(err_unexpected_indentation_character(ch, line, index + 1));
+  /// Starts a new item with indentation.
+  fn new_indentation(&mut self) {
+    self.item.indent_line = self.position_line;
+    self.item.indent_width = 0;
   }
-  item.indent_line = line;
-  item.indent_width = indentation.len();
-  indentation.clear();
-  Ok(())
-}
 
-/// Consumes node name.
-fn consume_name(item: &mut Item, name: &mut String, delimiter: Option<char>) {
-  item.delimiter = delimiter;
-  item.name = take(name);
-}
+  /// Consumes indentation.
+  fn consume_indentation(&mut self) -> Result<()> {
+    if let Some((column, ch)) = self.indentation.chars().enumerate().find(|(_, ch)| *ch != ' ') {
+      return Err(err_unexpected_indentation_character(ch, self.position_line, column + 1));
+    }
+    self.item.indent_line = self.position_line;
+    self.item.indent_width = self.indentation.len();
+    self.indentation.clear();
+    Ok(())
+  }
 
-/// Consumes node content.
-fn consume_content(items: &mut Vec<Item>, item: &mut Item, content: &mut String) {
-  item.content = take(content);
-  items.push(take(item));
+  /// Consumes node name.
+  fn consume_name(&mut self) {
+    self.item.delimiter = self.delimiter;
+    self.item.name = std::mem::take(&mut self.name);
+  }
+
+  /// Consumes node content.
+  fn consume_content(&mut self) {
+    self.item.content = std::mem::take(&mut self.content);
+    self.items.push(std::mem::take(&mut self.item));
+  }
 }
 
 /// Returns `true` when the specified character
