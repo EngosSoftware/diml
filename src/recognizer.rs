@@ -4,6 +4,10 @@ use crate::errors::*;
 use normalized_line_endings::{Annotated, AnnotatedChar, LF, LineEnding};
 use std::mem::take;
 
+pub fn recognize(input: impl AsRef<str>) -> Result<Vec<Item>> {
+  Recognizer::default().recognize(input)
+}
+
 /// Recognized item.
 #[derive(Default, Debug)]
 pub struct Item {
@@ -20,8 +24,10 @@ pub struct Item {
 }
 
 /// Recognizer state.
+#[derive(Default)]
 enum State {
   /// At the beginning of the input.
+  #[default]
   Start,
   /// At the beginning of the line.
   NewLine,
@@ -33,129 +39,136 @@ enum State {
   NodeContent,
 }
 
-/// Recognizes node items in the input text.
-pub fn recognize(input: &str) -> Result<Vec<Item>> {
-  let mut state = State::Start; // recognizing state
-  let mut line = 1; // current line in parsed input
-  let mut column = 0; // current character position in parsed input
-  let mut indentation = String::new(); // current indentation
-  let mut delimiter = None; // current delimiter
-  let mut name = String::new(); // current node name
-  let mut content = String::new(); // current node content
-  let mut item = Item::default(); // current item
-  let mut items = vec![]; // recognized items
-  let mut chars = input.chars().annotated();
-  loop {
-    let (current_char, line_ending) = if let Some(annotated_char) = chars.next() {
-      match annotated_char {
-        AnnotatedChar::Character(ch, row, col) => {
-          line = row;
-          column = col;
-          (Some(ch), None)
+#[derive(Default)]
+struct Recognizer {
+  /// Recognizing state.
+  state: State,
+}
+
+impl Recognizer {
+  /// Recognizes node items in the input text.
+  fn recognize(&mut self, input: impl AsRef<str>) -> Result<Vec<Item>> {
+    let mut line = 1; // current line in parsed input
+    let mut column = 0; // current character position in parsed input
+    let mut indentation = String::new(); // current indentation
+    let mut delimiter = None; // current delimiter
+    let mut name = String::new(); // current node name
+    let mut content = String::new(); // current node content
+    let mut item = Item::default(); // current item
+    let mut items = vec![]; // recognized items
+    let mut chars = input.as_ref().chars().annotated();
+    loop {
+      let (current_char, line_ending) = if let Some(annotated_char) = chars.next() {
+        match annotated_char {
+          AnnotatedChar::Character(ch, row, col) => {
+            line = row;
+            column = col;
+            (Some(ch), None)
+          }
+          AnnotatedChar::LineEnding(line_ending, row, col) => {
+            line = row;
+            column = col;
+            (Some(LF), Some(line_ending))
+          }
         }
-        AnnotatedChar::LineEnding(line_ending, row, col) => {
-          line = row;
-          column = col;
-          (Some(LF), Some(line_ending))
-        }
+      } else {
+        (None, None)
+      };
+      match self.state {
+        State::Start => match current_char {
+          None => return Err(err_empty_input()),
+          Some(ch) if is_allowed_char(ch) => {
+            delimiter = Some(ch);
+            new_indentation(&mut item, line);
+            self.state = State::NodeName;
+          }
+          Some(ch) => {
+            let ch = if ch == LF { line_ending.unwrap_or(LineEnding::Lf).first() } else { ch };
+            return Err(err_unexpected_character(ch, line, column));
+          }
+        },
+        State::NewLine => match current_char {
+          None => {
+            consume_content(&mut items, &mut item, &mut content);
+            break;
+          }
+          ch if delimiter == ch => {
+            consume_content(&mut items, &mut item, &mut content);
+            new_indentation(&mut item, line);
+            self.state = State::NodeName;
+          }
+          Some(LF) => {
+            new_line(&mut line, &mut column);
+            content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+          }
+          Some(ch) if ch.is_whitespace() => {
+            indentation.push(ch);
+            self.state = State::Indentation;
+          }
+          Some(ch) => {
+            content.push(ch);
+            self.state = State::NodeContent;
+          }
+        },
+        State::NodeName => match current_char {
+          None => {
+            return Err(err_missing_newline(line, column + 1));
+          }
+          Some(LF) => {
+            new_line(&mut line, &mut column);
+            consume_name(&mut item, &mut name, delimiter);
+            content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+            self.state = State::NewLine;
+          }
+          Some(ch) if ch.is_whitespace() => {
+            consume_name(&mut item, &mut name, delimiter);
+            content.push(ch);
+            self.state = State::NodeContent;
+          }
+          Some(ch) if is_allowed_char(ch) => {
+            name.push(ch);
+          }
+          Some(ch) => {
+            return Err(err_unexpected_character(ch, line, column));
+          }
+        },
+        State::Indentation => match current_char {
+          None => return Err(err_missing_newline(line, column + 1)),
+          ch if delimiter == ch => {
+            consume_content(&mut items, &mut item, &mut content);
+            consume_indentation(&mut item, &mut indentation, line)?;
+            self.state = State::NodeName;
+          }
+          Some(LF) => {
+            new_line(&mut line, &mut column);
+            content.push_str(&indentation);
+            content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+            indentation.clear();
+            self.state = State::NewLine;
+          }
+          Some(ch) if ch.is_whitespace() => {
+            indentation.push(ch);
+          }
+          Some(ch) => {
+            content.push_str(&indentation);
+            content.push(ch);
+            indentation.clear();
+            self.state = State::NodeContent;
+          }
+        },
+        State::NodeContent => match current_char {
+          None => return Err(err_missing_newline(line, column + 1)),
+          Some(LF) => {
+            new_line(&mut line, &mut column);
+            content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+            self.state = State::NewLine
+          }
+          Some(ch) => content.push(ch),
+        },
       }
-    } else {
-      (None, None)
-    };
-    match state {
-      State::Start => match current_char {
-        None => return Err(err_empty_input()),
-        Some(ch) if is_allowed_char(ch) => {
-          delimiter = Some(ch);
-          new_indentation(&mut item, line);
-          state = State::NodeName;
-        }
-        Some(ch) => {
-          let ch = if ch == LF { line_ending.unwrap_or(LineEnding::Lf).first() } else { ch };
-          return Err(err_unexpected_character(ch, line, column));
-        }
-      },
-      State::NewLine => match current_char {
-        None => {
-          consume_content(&mut items, &mut item, &mut content);
-          break;
-        }
-        ch if delimiter == ch => {
-          consume_content(&mut items, &mut item, &mut content);
-          new_indentation(&mut item, line);
-          state = State::NodeName;
-        }
-        Some(LF) => {
-          new_line(&mut line, &mut column);
-          content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
-        }
-        Some(ch) if ch.is_whitespace() => {
-          indentation.push(ch);
-          state = State::Indentation;
-        }
-        Some(ch) => {
-          content.push(ch);
-          state = State::NodeContent;
-        }
-      },
-      State::NodeName => match current_char {
-        None => {
-          return Err(err_missing_newline(line, column + 1));
-        }
-        Some(LF) => {
-          new_line(&mut line, &mut column);
-          consume_name(&mut item, &mut name, delimiter);
-          content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
-          state = State::NewLine;
-        }
-        Some(ch) if ch.is_whitespace() => {
-          consume_name(&mut item, &mut name, delimiter);
-          content.push(ch);
-          state = State::NodeContent;
-        }
-        Some(ch) if is_allowed_char(ch) => {
-          name.push(ch);
-        }
-        Some(ch) => {
-          return Err(err_unexpected_character(ch, line, column));
-        }
-      },
-      State::Indentation => match current_char {
-        None => return Err(err_missing_newline(line, column + 1)),
-        ch if delimiter == ch => {
-          consume_content(&mut items, &mut item, &mut content);
-          consume_indentation(&mut item, &mut indentation, line)?;
-          state = State::NodeName;
-        }
-        Some(LF) => {
-          new_line(&mut line, &mut column);
-          content.push_str(&indentation);
-          content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
-          indentation.clear();
-          state = State::NewLine;
-        }
-        Some(ch) if ch.is_whitespace() => {
-          indentation.push(ch);
-        }
-        Some(ch) => {
-          content.push_str(&indentation);
-          content.push(ch);
-          indentation.clear();
-          state = State::NodeContent;
-        }
-      },
-      State::NodeContent => match current_char {
-        None => return Err(err_missing_newline(line, column + 1)),
-        Some(LF) => {
-          new_line(&mut line, &mut column);
-          content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
-          state = State::NewLine
-        }
-        Some(ch) => content.push(ch),
-      },
     }
+    Ok(items)
   }
-  Ok(items)
 }
 
 /// Starts an item with indentation.
