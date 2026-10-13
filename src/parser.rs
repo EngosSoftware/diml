@@ -10,8 +10,8 @@ pub fn parse(input: &str) -> Result<Node> {
   let mut stack = vec![];
   let mut multiplier = 0;
   for Item {
-    line,
-    indentation,
+    indent_line: line,
+    indent_width: indentation,
     delimiter,
     name,
     content,

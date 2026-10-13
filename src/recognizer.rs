@@ -7,10 +7,10 @@ use std::mem::take;
 /// Recognized item.
 #[derive(Default, Debug)]
 pub struct Item {
-  /// Node line number.
-  pub line: usize,
-  /// Node indentation length.
-  pub indentation: usize,
+  /// Line number where the node indentation starts.
+  pub indent_line: usize,
+  /// Number of whitespaces in indentation.
+  pub indent_width: usize,
   /// Node delimiter.
   pub delimiter: Option<char>,
   /// Node name.
@@ -160,8 +160,8 @@ pub fn recognize(input: &str) -> Result<Vec<Item>> {
 
 /// Starts an item with indentation.
 fn new_indentation(item: &mut Item, line: usize) {
-  item.line = line;
-  item.indentation = 0;
+  item.indent_line = line;
+  item.indent_width = 0;
 }
 
 /// Consumes indentation.
@@ -169,8 +169,8 @@ fn consume_indentation(item: &mut Item, indentation: &mut String, line: usize) -
   if let Some((index, ch)) = indentation.chars().enumerate().find(|(_, ch)| *ch != ' ') {
     return Err(err_unexpected_indentation_character(ch, line, index + 1));
   }
-  item.line = line;
-  item.indentation = indentation.len();
+  item.indent_line = line;
+  item.indent_width = indentation.len();
   indentation.clear();
   Ok(())
 }
@@ -187,7 +187,8 @@ fn consume_content(items: &mut Vec<Item>, item: &mut Item, content: &mut String)
   items.push(take(item));
 }
 
-/// Returns `true` when the specified character is allowed as a delimiter or in a node name.
+/// Returns `true` when the specified character
+/// is allowed as a delimiter or in a node name.
 fn is_allowed_char(ch: char) -> bool {
   !(ch.is_control() || ch.is_whitespace())
 }
