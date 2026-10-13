@@ -88,16 +88,16 @@ impl Recognizer {
       match self.state {
         State::Start => match current_char {
           None => return Err(err_empty_input()),
-          Some(AnnotatedChar::LineEnding(line_ending, ..)) => {
-            return Err(err_unexpected_character(line_ending.first(), self.position_line, self.position_column));
-          }
           Some(AnnotatedChar::Character(ch, ..)) if is_allowed_char(ch) => {
             self.delimiter = Some(ch);
             self.new_indentation();
             self.state = State::NodeName;
           }
-          Some(AnnotatedChar::Character(ch, ..)) => {
-            return Err(err_unexpected_character(ch, self.position_line, self.position_column));
+          Some(AnnotatedChar::Character(ch, line, column)) => {
+            return Err(err_unexpected_character(ch, line, column));
+          }
+          Some(AnnotatedChar::LineEnding(line_ending, line, column)) => {
+            return Err(err_unexpected_character(line_ending.first(), line, column));
           }
         },
         State::NewLine => match current_char {
@@ -141,8 +141,8 @@ impl Recognizer {
           Some(AnnotatedChar::Character(ch, ..)) if is_allowed_char(ch) => {
             self.name.push(ch);
           }
-          Some(AnnotatedChar::Character(ch, ..)) => {
-            return Err(err_unexpected_character(ch, self.position_line, self.position_column));
+          Some(AnnotatedChar::Character(ch, line, column)) => {
+            return Err(err_unexpected_character(ch, line, column));
           }
         },
         State::Indentation => match current_char {
