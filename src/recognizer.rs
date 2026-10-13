@@ -24,8 +24,10 @@ pub struct Item {
 }
 
 /// Recognizer state.
+#[derive(Default)]
 enum State {
   /// At the beginning of the input.
+  #[default]
   Start,
   /// At the beginning of the line.
   NewLine,
@@ -37,6 +39,7 @@ enum State {
   NodeContent,
 }
 
+#[derive(Default)]
 struct Recognizer {
   /// Recognizing state.
   state: State,
@@ -44,25 +47,30 @@ struct Recognizer {
   position_line: usize,
   /// Current input character (column) position.
   position_column: usize,
+  /// Current indentation.
+  indentation: String,
+  /// Current delimiter.
+  delimiter: Option<char>,
+  /// Current node name.
+  name: String,
+  /// Current node content.
+  content: String,
+  /// Current item.
+  item: Item,
+  /// Recognized items.
+  items: Vec<Item>,
 }
 
 impl Recognizer {
   fn new() -> Self {
     Self {
-      state: State::Start,
       position_line: 1,
-      position_column: 0,
+      ..Default::default()
     }
   }
 
   /// Recognizes node items in the input text.
-  fn recognize(&mut self, input: impl AsRef<str>) -> Result<Vec<Item>> {
-    let mut indentation = String::new(); // current indentation
-    let mut delimiter = None; // current delimiter
-    let mut name = String::new(); // current node name
-    let mut content = String::new(); // current node content
-    let mut item = Item::default(); // current item
-    let mut items = vec![]; // recognized items
+  fn recognize(mut self, input: impl AsRef<str>) -> Result<Vec<Item>> {
     let mut chars = input.as_ref().chars().annotated();
     loop {
       let (current_char, line_ending) = if let Some(annotated_char) = chars.next() {
@@ -85,8 +93,8 @@ impl Recognizer {
         State::Start => match current_char {
           None => return Err(err_empty_input()),
           Some(ch) if is_allowed_char(ch) => {
-            delimiter = Some(ch);
-            new_indentation(&mut item, self.position_line);
+            self.delimiter = Some(ch);
+            new_indentation(&mut self.item, self.position_line);
             self.state = State::NodeName;
           }
           Some(ch) => {
@@ -96,24 +104,24 @@ impl Recognizer {
         },
         State::NewLine => match current_char {
           None => {
-            consume_content(&mut items, &mut item, &mut content);
+            consume_content(&mut self.items, &mut self.item, &mut self.content);
             break;
           }
-          ch if delimiter == ch => {
-            consume_content(&mut items, &mut item, &mut content);
-            new_indentation(&mut item, self.position_line);
+          ch if self.delimiter == ch => {
+            consume_content(&mut self.items, &mut self.item, &mut self.content);
+            new_indentation(&mut self.item, self.position_line);
             self.state = State::NodeName;
           }
           Some(LF) => {
             self.new_line();
-            content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+            self.content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
           }
           Some(ch) if ch.is_whitespace() => {
-            indentation.push(ch);
+            self.indentation.push(ch);
             self.state = State::Indentation;
           }
           Some(ch) => {
-            content.push(ch);
+            self.content.push(ch);
             self.state = State::NodeContent;
           }
         },
@@ -123,17 +131,17 @@ impl Recognizer {
           }
           Some(LF) => {
             self.new_line();
-            consume_name(&mut item, &mut name, delimiter);
-            content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+            consume_name(&mut self.item, &mut self.name, self.delimiter);
+            self.content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
             self.state = State::NewLine;
           }
           Some(ch) if ch.is_whitespace() => {
-            consume_name(&mut item, &mut name, delimiter);
-            content.push(ch);
+            consume_name(&mut self.item, &mut self.name, self.delimiter);
+            self.content.push(ch);
             self.state = State::NodeContent;
           }
           Some(ch) if is_allowed_char(ch) => {
-            name.push(ch);
+            self.name.push(ch);
           }
           Some(ch) => {
             return Err(err_unexpected_character(ch, self.position_line, self.position_column));
@@ -141,25 +149,25 @@ impl Recognizer {
         },
         State::Indentation => match current_char {
           None => return Err(err_missing_newline(self.position_line, self.position_column + 1)),
-          ch if delimiter == ch => {
-            consume_content(&mut items, &mut item, &mut content);
-            consume_indentation(&mut item, &mut indentation, self.position_line)?;
+          ch if self.delimiter == ch => {
+            consume_content(&mut self.items, &mut self.item, &mut self.content);
+            consume_indentation(&mut self.item, &mut self.indentation, self.position_line)?;
             self.state = State::NodeName;
           }
           Some(LF) => {
             self.new_line();
-            content.push_str(&indentation);
-            content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
-            indentation.clear();
+            self.content.push_str(&self.indentation);
+            self.content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+            self.indentation.clear();
             self.state = State::NewLine;
           }
           Some(ch) if ch.is_whitespace() => {
-            indentation.push(ch);
+            self.indentation.push(ch);
           }
           Some(ch) => {
-            content.push_str(&indentation);
-            content.push(ch);
-            indentation.clear();
+            self.content.push_str(&self.indentation);
+            self.content.push(ch);
+            self.indentation.clear();
             self.state = State::NodeContent;
           }
         },
@@ -167,14 +175,14 @@ impl Recognizer {
           None => return Err(err_missing_newline(self.position_line, self.position_column + 1)),
           Some(LF) => {
             self.new_line();
-            content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
+            self.content.push_str(line_ending.unwrap_or(LineEnding::Lf).as_ref());
             self.state = State::NewLine
           }
-          Some(ch) => content.push(ch),
+          Some(ch) => self.content.push(ch),
         },
       }
     }
-    Ok(items)
+    Ok(self.items)
   }
 
   /// Advances current position to the beginning of a new line.
