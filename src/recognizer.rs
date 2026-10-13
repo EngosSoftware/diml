@@ -1,7 +1,7 @@
 //! # Recognizer implementation
 
 use crate::errors::*;
-use normalized_line_endings::{Annotated, AnnotatedChar, LineEnding};
+use normalized_line_endings::{Annotated, AnnotatedChar};
 
 pub fn recognize(input: impl AsRef<str>) -> Result<Vec<Item>> {
   Recognizer::new().recognize(input)
@@ -38,11 +38,6 @@ enum State {
   NodeContent,
 }
 
-enum Char {
-  Ch(char),
-  Nl(LineEnding),
-}
-
 #[derive(Default)]
 struct Recognizer {
   /// Recognizing state.
@@ -77,34 +72,31 @@ impl Recognizer {
   fn recognize(mut self, input: impl AsRef<str>) -> Result<Vec<Item>> {
     let mut chars = input.as_ref().chars().annotated();
     loop {
-      let current_char = if let Some(annotated_char) = chars.next() {
+      let current_char = chars.next();
+      if let Some(annotated_char) = &current_char {
         match annotated_char {
-          AnnotatedChar::Character(ch, line, column) => {
-            self.position_line = line;
-            self.position_column = column;
-            Some(Char::Ch(ch))
+          AnnotatedChar::Character(_, line, column) => {
+            self.position_line = *line;
+            self.position_column = *column;
           }
-          AnnotatedChar::LineEnding(line_ending, line, column) => {
-            self.position_line = line;
-            self.position_column = column;
-            Some(Char::Nl(line_ending))
+          AnnotatedChar::LineEnding(_, line, column) => {
+            self.position_line = *line;
+            self.position_column = *column;
           }
         }
-      } else {
-        None
-      };
+      }
       match self.state {
         State::Start => match current_char {
           None => return Err(err_empty_input()),
-          Some(Char::Nl(line_ending)) => {
+          Some(AnnotatedChar::LineEnding(line_ending, ..)) => {
             return Err(err_unexpected_character(line_ending.first(), self.position_line, self.position_column));
           }
-          Some(Char::Ch(ch)) if is_allowed_char(ch) => {
+          Some(AnnotatedChar::Character(ch, ..)) if is_allowed_char(ch) => {
             self.delimiter = Some(ch);
             self.new_indentation();
             self.state = State::NodeName;
           }
-          Some(Char::Ch(ch)) => {
+          Some(AnnotatedChar::Character(ch, ..)) => {
             return Err(err_unexpected_character(ch, self.position_line, self.position_column));
           }
         },
@@ -113,20 +105,20 @@ impl Recognizer {
             self.consume_content();
             break;
           }
-          Some(Char::Ch(ch)) if self.delimiter == Some(ch) => {
+          Some(AnnotatedChar::Character(ch, ..)) if self.delimiter == Some(ch) => {
             self.consume_content();
             self.new_indentation();
             self.state = State::NodeName;
           }
-          Some(Char::Nl(line_ending)) => {
+          Some(AnnotatedChar::LineEnding(line_ending, ..)) => {
             self.new_line();
             self.content.push_str(line_ending.as_ref());
           }
-          Some(Char::Ch(ch)) if ch.is_whitespace() => {
+          Some(AnnotatedChar::Character(ch, ..)) if ch.is_whitespace() => {
             self.indentation.push(ch);
             self.state = State::Indentation;
           }
-          Some(Char::Ch(ch)) => {
+          Some(AnnotatedChar::Character(ch, ..)) => {
             self.content.push(ch);
             self.state = State::NodeContent;
           }
@@ -135,42 +127,42 @@ impl Recognizer {
           None => {
             return Err(err_missing_newline(self.position_line, self.position_column + 1));
           }
-          Some(Char::Nl(line_ending)) => {
+          Some(AnnotatedChar::LineEnding(line_ending, ..)) => {
             self.new_line();
             self.consume_name();
             self.content.push_str(line_ending.as_ref());
             self.state = State::NewLine;
           }
-          Some(Char::Ch(ch)) if ch.is_whitespace() => {
+          Some(AnnotatedChar::Character(ch, ..)) if ch.is_whitespace() => {
             self.consume_name();
             self.content.push(ch);
             self.state = State::NodeContent;
           }
-          Some(Char::Ch(ch)) if is_allowed_char(ch) => {
+          Some(AnnotatedChar::Character(ch, ..)) if is_allowed_char(ch) => {
             self.name.push(ch);
           }
-          Some(Char::Ch(ch)) => {
+          Some(AnnotatedChar::Character(ch, ..)) => {
             return Err(err_unexpected_character(ch, self.position_line, self.position_column));
           }
         },
         State::Indentation => match current_char {
           None => return Err(err_missing_newline(self.position_line, self.position_column + 1)),
-          Some(Char::Ch(ch)) if self.delimiter == Some(ch) => {
+          Some(AnnotatedChar::Character(ch, ..)) if self.delimiter == Some(ch) => {
             self.consume_content();
             self.consume_indentation()?;
             self.state = State::NodeName;
           }
-          Some(Char::Nl(line_ending)) => {
+          Some(AnnotatedChar::LineEnding(line_ending, ..)) => {
             self.new_line();
             self.content.push_str(&self.indentation);
             self.content.push_str(line_ending.as_ref());
             self.indentation.clear();
             self.state = State::NewLine;
           }
-          Some(Char::Ch(ch)) if ch.is_whitespace() => {
+          Some(AnnotatedChar::Character(ch, ..)) if ch.is_whitespace() => {
             self.indentation.push(ch);
           }
-          Some(Char::Ch(ch)) => {
+          Some(AnnotatedChar::Character(ch, ..)) => {
             self.content.push_str(&self.indentation);
             self.content.push(ch);
             self.indentation.clear();
@@ -179,12 +171,12 @@ impl Recognizer {
         },
         State::NodeContent => match current_char {
           None => return Err(err_missing_newline(self.position_line, self.position_column + 1)),
-          Some(Char::Nl(line_ending)) => {
+          Some(AnnotatedChar::LineEnding(line_ending, ..)) => {
             self.new_line();
             self.content.push_str(line_ending.as_ref());
             self.state = State::NewLine
           }
-          Some(Char::Ch(ch)) => self.content.push(ch),
+          Some(AnnotatedChar::Character(ch, ..)) => self.content.push(ch),
         },
       }
     }
