@@ -2,7 +2,7 @@
 name = "diml"
 version = "0.2.0"
 authors = ["Dariusz Depta <depta@engos.de>"]
-description = "Delimiter-Indented Markup Language (DIML) parser"
+description = "Delimiter-Indented Markup Language parser"
 documentation = "https://docs.rs/diml"
 repository = "https://github.com/EngosSoftware/diml.git"
 keywords = ["delimiter", "indented", "markup", "language", "parser"]
@@ -22,4 +22,4 @@ include = [
 ]
 
 [dependencies]
-normalized-line-endings = "1.0.14"
+anch = "0.1.0"

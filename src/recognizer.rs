@@ -1,7 +1,7 @@
 //! # Recognizer implementation
 
 use crate::errors::*;
-use normalized_line_endings::{Annotated, AnnotatedChar};
+use anch::{Annotated, AnnotatedChar};
 
 pub fn recognize(input: impl AsRef<str>) -> Result<Vec<Item>> {
   Recognizer::default().recognize(input)
@@ -64,17 +64,8 @@ impl Recognizer {
     let mut chars = input.as_ref().chars().annotated();
     loop {
       let current_char = chars.next();
-      if let Some(annotated_char) = &current_char {
-        match annotated_char {
-          AnnotatedChar::Character(_, line, column) => {
-            last_line = *line;
-            last_column = *column;
-          }
-          AnnotatedChar::LineEnding(_, line, column) => {
-            last_line = *line;
-            last_column = *column;
-          }
-        }
+      if let Some(annotated_char) = current_char {
+        (last_line, last_column) = annotated_char.position();
       }
       match self.state {
         State::Start => match current_char {
