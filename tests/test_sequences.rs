@@ -39,22 +39,22 @@ const C: &str = ".C\n";
 const D: &str = ".D d\n";
 
 fn eq(node1: &str, node2: &str) {
-  let input = format!("{node1}{node2}");
-  assert_eq!(input, format!("{}", parse(&input).unwrap()));
+    let input = format!("{node1}{node2}");
+    assert_eq!(input, format!("{}", parse(&input).unwrap()));
 }
 
 #[test]
 fn sequences_should_work() {
-  eq(A, B);
-  eq(B, A);
-  eq(A, C);
-  eq(C, A);
-  eq(A, D);
-  eq(D, A);
-  eq(B, C);
-  eq(C, B);
-  eq(B, D);
-  eq(D, B);
-  eq(C, D);
-  eq(D, C);
+    eq(A, B);
+    eq(B, A);
+    eq(A, C);
+    eq(C, A);
+    eq(A, D);
+    eq(D, A);
+    eq(B, C);
+    eq(C, B);
+    eq(B, D);
+    eq(D, B);
+    eq(C, D);
+    eq(D, C);
 }
