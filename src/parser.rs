@@ -14,32 +14,32 @@ pub fn parse(input: &str) -> Result<Node> {
     let mut stack = vec![];
     let mut multiplier = 0;
     for Item {
-        indent_line: line,
-        indent_width: indentation,
+        indent_line,
+        indent_width,
         delimiter,
         name,
         content,
     } in recognize(input)?
     {
-        if multiplier == 0 && indentation > 0 {
-            multiplier = indentation;
+        if multiplier == 0 && indent_width > 0 {
+            multiplier = indent_width;
         }
-        if multiplier > 0 && !indentation.is_multiple_of(multiplier) {
+        if multiplier > 0 && !indent_width.is_multiple_of(multiplier) {
             return Err(err_invalid_indentation(
-                indentation,
+                indent_width,
                 multiplier,
-                line,
-                indentation,
+                indent_line,
+                indent_width,
             ));
         }
-        let level = indentation.checked_div(multiplier).unwrap_or(0) + 1;
+        let level = indent_width.checked_div(multiplier).unwrap_or(0) + 1;
         let previous_level = nodes.last().map_or(0, |node: &Node| node.level());
         if level > previous_level + 1 {
             return Err(err_skipped_indentation_level(
                 previous_level,
                 level,
-                line,
-                indentation,
+                indent_line,
+                indent_width,
             ));
         }
         let node = Node::new(level, delimiter, name, content);
