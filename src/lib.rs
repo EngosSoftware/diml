@@ -5,9 +5,8 @@
 
 mod errors;
 mod node;
-mod parser;
 mod recognizer;
 
 pub use errors::{DimlError, Result};
 pub use node::Node;
-pub use parser::parse;
+pub use recognizer::parse;
