@@ -118,22 +118,22 @@ impl Display for DimlError {
 impl Error for DimlError {}
 
 /// Reports an empty input.
-pub fn err_empty_input() -> DimlError {
+pub(crate) fn err_empty_input() -> DimlError {
     DimlError::EmptyInput
 }
 
 /// Reports an unexpected character encountered on input.
-pub fn err_unexpected_character(ch: char, line: usize, column: usize) -> DimlError {
+pub(crate) fn err_unexpected_character(ch: char, line: usize, column: usize) -> DimlError {
     DimlError::UnexpectedCharacter { ch, line, column }
 }
 
 /// Reports a missing newline at the end of the last line.
-pub fn err_missing_newline(line: usize, column: usize) -> DimlError {
+pub(crate) fn err_missing_newline(line: usize, column: usize) -> DimlError {
     DimlError::MissingNewline { line, column }
 }
 
 /// Reports invalid indentation.
-pub fn err_invalid_indentation(
+pub(crate) fn err_invalid_indentation(
     indent: usize,
     multiplier: usize,
     line: usize,
@@ -148,12 +148,16 @@ pub fn err_invalid_indentation(
 }
 
 /// Reports unexpected indentation character.
-pub fn err_unexpected_indentation_character(ch: char, line: usize, column: usize) -> DimlError {
+pub(crate) fn err_unexpected_indentation_character(
+    ch: char,
+    line: usize,
+    column: usize,
+) -> DimlError {
     DimlError::UnexpectedIndentationCharacter { ch, line, column }
 }
 
 /// Reports skipped indentation level.
-pub fn err_skipped_indentation_level(
+pub(crate) fn err_skipped_indentation_level(
     previous: usize,
     level: usize,
     line: usize,
