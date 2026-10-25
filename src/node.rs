@@ -29,11 +29,7 @@ impl std::fmt::Display for Node {
         let width = f.width().unwrap_or(2);
         if let Some(delimiter) = self.delimiter {
             let indent = self.level.saturating_sub(1) * width;
-            write!(
-                f,
-                "{:indent$}{}{}{}",
-                "", delimiter, self.name, self.content
-            )?;
+            write!(f, "{:indent$}{delimiter}{}{}", "", self.name, self.content)?;
         }
         for child in &self.children {
             write!(f, "{child:width$}")?;
