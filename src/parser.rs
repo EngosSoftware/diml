@@ -1,4 +1,4 @@
-//! # Recognizer implementation
+//! # Parser implementation
 
 use crate::Node;
 use crate::errors::{
@@ -7,45 +7,38 @@ use crate::errors::{
 };
 use anch::{Annotated, AnnotatedChar};
 
-/// Parses input text.
+/// Parses the input text.
 ///
 /// # Errors
 ///
-/// Will return `Err` when parsing input text fails.
+/// Will return `Err` when parsing the input text fails.
 pub fn parse(input: &str) -> Result<Node> {
     let mut nodes = vec![];
     let mut stack = vec![];
     let mut multiplier = 0;
-    for Item {
-        indent_line,
-        indent_width,
-        delimiter,
-        name,
-        content,
-    } in Recognizer::default().recognize(input)?
-    {
-        if multiplier == 0 && indent_width > 0 {
-            multiplier = indent_width;
+    for item in Parser::default().parse(input)? {
+        if multiplier == 0 && item.indent_width > 0 {
+            multiplier = item.indent_width;
         }
-        if multiplier > 0 && !indent_width.is_multiple_of(multiplier) {
+        if multiplier > 0 && !item.indent_width.is_multiple_of(multiplier) {
             return Err(err_invalid_indentation(
-                indent_width,
+                item.indent_width,
                 multiplier,
-                indent_line,
-                indent_width,
+                item.indent_line,
+                item.indent_width,
             ));
         }
-        let level = indent_width.checked_div(multiplier).unwrap_or(0) + 1;
+        let level = item.indent_width.checked_div(multiplier).unwrap_or(0) + 1;
         let previous_level = nodes.last().map_or(0, |node: &Node| node.level());
         if level > previous_level + 1 {
             return Err(err_skipped_indentation_level(
                 previous_level,
                 level,
-                indent_line,
-                indent_width,
+                item.indent_line,
+                item.indent_width,
             ));
         }
-        let node = Node::new(level, delimiter, name, content);
+        let node = Node::new(level, item.delimiter, item.name, item.content);
         nodes.push(node);
     }
     for mut node in nodes.drain(..).rev() {
@@ -65,7 +58,7 @@ pub fn parse(input: &str) -> Result<Node> {
     Ok(root)
 }
 
-/// Recognized item.
+/// Parsed item.
 #[derive(Default)]
 struct Item {
     /// Line number where the node indentation starts.
@@ -80,7 +73,7 @@ struct Item {
     content: String,
 }
 
-/// Recognizer state.
+/// Parser state.
 #[derive(Default)]
 enum State {
     /// At the beginning of the input.
@@ -97,8 +90,8 @@ enum State {
 }
 
 #[derive(Default)]
-struct Recognizer {
-    /// Recognizing state.
+struct Parser {
+    /// Parser state.
     state: State,
     /// Current indentation.
     indentation: String,
@@ -110,14 +103,14 @@ struct Recognizer {
     content: String,
     /// Current item.
     item: Item,
-    /// Recognized items.
+    /// Parsed items.
     items: Vec<Item>,
 }
 
-impl Recognizer {
-    /// Recognizes node items in the input text.
+impl Parser {
+    /// Parses items in the input text.
     #[allow(clippy::too_many_lines)]
-    fn recognize(mut self, input: &str) -> Result<Vec<Item>> {
+    fn parse(mut self, input: &str) -> Result<Vec<Item>> {
         let mut last_line = 0;
         let mut last_column = 0;
         let mut chars = input.chars().annotated();
