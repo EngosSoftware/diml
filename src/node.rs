@@ -135,10 +135,9 @@ impl Node {
         &'a self,
         names: &'a [impl AsRef<str>],
     ) -> impl Iterator<Item = &'a Node> {
-        let names = names.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
         self.children
             .iter()
-            .filter(move |node| names.contains(&node.name()))
+            .filter(|node| names.iter().any(|name| name.as_ref() == node.name))
     }
 
     /// Returns an iterator over child nodes, excluding those with the specified name.
@@ -153,10 +152,9 @@ impl Node {
         &'a self,
         names: &'a [impl AsRef<str>],
     ) -> impl Iterator<Item = &'a Node> {
-        let names = names.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
         self.children
             .iter()
-            .filter(move |node| !names.contains(&node.name()))
+            .filter(|node| !names.iter().any(|name| name.as_ref() == node.name))
     }
 
     /// Returns the number of child nodes.
