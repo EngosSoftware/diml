@@ -13,5 +13,5 @@ fn display_errors_should_work() {
 
   let input = ".A aaa\n  .B bbb\n  .C ccc\n";
   let root = parse(input).unwrap();
-  assert!(write!(FailingWriter {}, "{}", root).is_err());
+  assert!(write!(FailingWriter {}, "{root}").is_err());
 }

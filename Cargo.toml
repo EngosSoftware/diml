@@ -6,10 +6,10 @@ description = "Delimiter-Indented Markup Language parser"
 documentation = "https://docs.rs/diml"
 repository = "https://github.com/EngosSoftware/diml.git"
 keywords = ["delimiter", "indented", "markup", "language", "parser"]
-categories = ["encoding"]
+categories = ["encoding", "text-processing"]
+rust-version = "1.87.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
-rust-version = "1.87.0"
 include = [
     "docs/**",
     "src/**",

@@ -1,10 +1,14 @@
 //! # Parser implementation
 
 use crate::Node;
-use crate::errors::*;
+use crate::errors::{Result, err_invalid_indentation, err_skipped_indentation_level};
 use crate::recognizer::{Item, recognize};
 
 /// Parses input text.
+///
+/// # Errors
+///
+/// Will return `Err` when parsing input fails.
 pub fn parse(input: &str) -> Result<Node> {
   let mut nodes = vec![];
   let mut stack = vec![];
@@ -35,8 +39,8 @@ pub fn parse(input: &str) -> Result<Node> {
     if stack.is_empty() {
       stack.push(node);
     } else {
-      while stack.last().is_some_and(|last| last.level() > node.level()) {
-        node.add_child(stack.pop().unwrap());
+      while let Some(child) = stack.pop_if(|last| last.level() > node.level()) {
+        node.add_child(child);
       }
       stack.push(node);
     }

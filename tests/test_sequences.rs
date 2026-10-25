@@ -39,7 +39,7 @@ const C: &str = ".C\n";
 const D: &str = ".D d\n";
 
 fn eq(node1: &str, node2: &str) {
-  let input = format!("{}{}", node1, node2);
+  let input = format!("{node1}{node2}");
   assert_eq!(input, format!("{}", parse(&input).unwrap()));
 }
 

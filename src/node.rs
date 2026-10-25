@@ -32,7 +32,7 @@ impl std::fmt::Display for Node {
       write!(f, "{:indent$}{}{}{}", "", delimiter, self.name, self.content)?;
     }
     for child in &self.children {
-      write!(f, "{:width$}", child)?;
+      write!(f, "{child:width$}")?;
     }
     Ok(())
   }
@@ -44,8 +44,8 @@ impl Node {
     Self {
       level: 0,
       delimiter: None,
-      name: "".to_string(),
-      content: "".to_string(),
+      name: String::new(),
+      content: String::new(),
       children: vec![],
     }
   }
@@ -67,26 +67,31 @@ impl Node {
   }
 
   /// Returns the indentation level of the node.
+  #[must_use]
   pub fn level(&self) -> usize {
     self.level
   }
 
   /// Returns the delimiter of the node.
+  #[must_use]
   pub fn delimiter(&self) -> Option<char> {
     self.delimiter
   }
 
   /// Returns the node name.
+  #[must_use]
   pub fn name(&self) -> &str {
     &self.name
   }
 
   /// Returns the node content.
+  #[must_use]
   pub fn content(&self) -> &str {
     &self.content
   }
 
   /// Returns the node text (trimmed content).
+  #[must_use]
   pub fn text(&self) -> &str {
     self.content.trim()
   }
@@ -113,7 +118,7 @@ impl Node {
 
   /// Returns an iterator over child nodes that have any of the specified names.
   pub fn with_names<'a>(&'a self, names: &'a [impl AsRef<str>]) -> impl Iterator<Item = &'a Node> {
-    let names = names.iter().map(|name| name.as_ref()).collect::<Vec<&str>>();
+    let names = names.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
     self.children.iter().filter(move |node| names.contains(&node.name()))
   }
 
@@ -124,11 +129,12 @@ impl Node {
 
   /// Returns an iterator over child nodes, excluding those with any of the specified names.
   pub fn excluding_names<'a>(&'a self, names: &'a [impl AsRef<str>]) -> impl Iterator<Item = &'a Node> {
-    let names = names.iter().map(|name| name.as_ref()).collect::<Vec<&str>>();
+    let names = names.iter().map(AsRef::as_ref).collect::<Vec<&str>>();
     self.children.iter().filter(move |node| !names.contains(&node.name()))
   }
 
   /// Returns the number of child nodes.
+  #[must_use]
   pub fn child_count(&self) -> usize {
     self.children.len()
   }

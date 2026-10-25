@@ -18,14 +18,14 @@ fn excluding_names(node: &Node, names: &[&str]) -> Vec<String> {
 
 #[test]
 fn _0001() {
-  let input = r#".A
+  let input = r".A
     .B
     .B
     .C
     .D
     .D
     .D
-"#;
+";
   let root = parse(input).unwrap();
   assert_eq!(1, root.children().count());
   assert_eq!(1, root.child_count());
@@ -39,19 +39,19 @@ fn _0001() {
   assert_eq!(vec!["B", "B"], with_name(node, "B"));
   assert_eq!(vec!["C"], with_name(node, "C"));
   assert_eq!(vec!["D", "D", "D"], with_name(node, "D"));
-  assert!(with_name(node, "E").is_empty());
+  assert_eq!(0, with_name(node, "E").len());
 }
 
 #[test]
 fn _0002() {
-  let input = r#".A
+  let input = r".A
     .B
     .B
     .C
     .D
     .D
     .D
-"#;
+";
   let root = parse(input).unwrap();
   let node = root.children().next().unwrap();
   assert_eq!(vec!["C", "D", "D", "D"], excluding_name(node, "B"));
@@ -61,14 +61,14 @@ fn _0002() {
 
 #[test]
 fn _0003() {
-  let input = r#".A
+  let input = r".A
     .B
     .B
     .C
     .D
     .D
     .D
-"#;
+";
   let root = parse(input).unwrap();
   let node = root.children().next().unwrap();
   assert_eq!(vec!["B", "B"], with_names(node, &["B"]));
@@ -78,14 +78,14 @@ fn _0003() {
 
 #[test]
 fn _0004() {
-  let input = r#".A
+  let input = r".A
     .B
     .B
     .C
     .D
     .D
     .D
-"#;
+";
   let root = parse(input).unwrap();
   let node = root.children().next().unwrap();
   assert_eq!(vec!["C", "D", "D", "D"], excluding_names(node, &["B"]));

@@ -1,6 +1,6 @@
 //! # Recognizer implementation
 
-use crate::errors::*;
+use crate::errors::{Result, err_empty_input, err_missing_newline, err_unexpected_character, err_unexpected_indentation_character};
 use anch::{Annotated, AnnotatedChar};
 
 pub fn recognize(input: impl AsRef<str>) -> Result<Vec<Item>> {
@@ -58,6 +58,7 @@ struct Recognizer {
 
 impl Recognizer {
   /// Recognizes node items in the input text.
+  #[allow(clippy::too_many_lines)]
   fn recognize(mut self, input: impl AsRef<str>) -> Result<Vec<Item>> {
     let mut last_line = 0;
     let mut last_column = 0;
@@ -164,7 +165,7 @@ impl Recognizer {
           }
           Some(AnnotatedChar::LineEnding(line_ending, ..)) => {
             self.content.push_str(line_ending.as_ref());
-            self.state = State::NewLine
+            self.state = State::NewLine;
           }
         },
       }

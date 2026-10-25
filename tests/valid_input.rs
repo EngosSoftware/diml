@@ -240,47 +240,47 @@ fn _0018() {
 fn _0019() {
   let input = ".A\r";
   let root = parse(input).unwrap();
-  assert_eq!(input, format!("{:4}", root));
+  assert_eq!(input, format!("{root:4}"));
 }
 
 #[test]
 fn _0020() {
   let input = ".A\r\n";
   let root = parse(input).unwrap();
-  assert_eq!(input, format!("{:4}", root));
+  assert_eq!(input, format!("{root:4}"));
 }
 
 #[test]
 fn _0021() {
-  let input = r#".A
+  let input = r".A
     .B
     .C
-"#;
+";
   let root = parse(input).unwrap();
-  assert_eq!(input, format!("{:4}", root));
+  assert_eq!(input, format!("{root:4}"));
 }
 
 #[test]
 fn _0022() {
-  let input = r#".A
+  let input = r".A
 
   some content
 
   .B
   .C
-"#;
+";
   let root = parse(input).unwrap();
-  assert_eq!(input, format!("{}", root));
+  assert_eq!(input, format!("{root}"));
 }
 
 #[test]
 fn _0023() {
-  let input = r#"
+  let input = r"
 .A a
   .B b
   
   .C c
-"#;
+";
   let root = parse(input.trim_start()).unwrap();
   let node_a = root.children().next().unwrap();
   assert_eq!('.', node_a.delimiter().unwrap());

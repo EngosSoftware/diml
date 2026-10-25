@@ -20,7 +20,11 @@
 
   .clippy
     .desc Runs clippy for all targets
-    .cmd cargo {{RUST_TOOLCHAIN}} clippy --all-targets
+    .cmd cargo {{RUST_TOOLCHAIN}} clippy --all-targets -- -D warnings
+
+  .clippy-pedantic
+    .desc Runs pedantic clippy for all targets
+    .cmd cargo {{RUST_TOOLCHAIN}} clippy --all-targets -- -D warnings -W clippy::pedantic
 
   .cov
     .desc Generates code coverage report in text format

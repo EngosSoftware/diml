@@ -3,7 +3,7 @@
 use std::error::Error;
 use std::fmt::Display;
 
-/// Result type for [DimlError].
+/// Result type for [`DimlError`].
 pub type Result<T, E = DimlError> = std::result::Result<T, E>;
 
 /// Errors definition.
@@ -62,7 +62,7 @@ pub enum DimlError {
 }
 
 impl Display for DimlError {
-  /// Implements [Display] trait for [DimlError].
+  /// Implements [Display] trait for [`DimlError`].
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
       DimlError::EmptyInput => {
@@ -90,7 +90,7 @@ impl Display for DimlError {
   }
 }
 
-/// Implements [Error] trait for [DimlError].
+/// Implements [Error] trait for [`DimlError`].
 impl Error for DimlError {}
 
 /// Reports an empty input.
