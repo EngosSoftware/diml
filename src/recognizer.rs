@@ -7,11 +7,11 @@ use crate::errors::{
 };
 use anch::{Annotated, AnnotatedChar};
 
-/// Parses the input text.
+/// Parses input text.
 ///
 /// # Errors
 ///
-/// Will return `Err` when parsing input fails.
+/// Will return `Err` when parsing input text fails.
 pub fn parse(input: &str) -> Result<Node> {
     let mut nodes = vec![];
     let mut stack = vec![];
