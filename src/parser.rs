@@ -42,14 +42,10 @@ pub fn parse(input: &str) -> Result<Node> {
         nodes.push(node);
     }
     for mut node in nodes.drain(..).rev() {
-        if stack.is_empty() {
-            stack.push(node);
-        } else {
-            while let Some(child) = stack.pop_if(|last| last.level() > node.level()) {
-                node.add_child(child);
-            }
-            stack.push(node);
+        while let Some(child) = stack.pop_if(|last: &mut Node| last.level() > node.level()) {
+            node.add_child(child);
         }
+        stack.push(node);
     }
     let mut root = Node::root();
     while let Some(node) = stack.pop() {
