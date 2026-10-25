@@ -7,7 +7,7 @@ use crate::errors::{
 };
 use anch::{Annotated, AnnotatedChar};
 
-/// Parses input text.
+/// Parses the input text.
 ///
 /// # Errors
 ///
@@ -22,7 +22,7 @@ pub fn parse(input: &str) -> Result<Node> {
         delimiter,
         name,
         content,
-    } in recognize(input)?
+    } in Recognizer::default().recognize(input)?
     {
         if multiplier == 0 && indent_width > 0 {
             multiplier = indent_width;
@@ -65,23 +65,19 @@ pub fn parse(input: &str) -> Result<Node> {
     Ok(root)
 }
 
-pub fn recognize(input: impl AsRef<str>) -> Result<Vec<Item>> {
-    Recognizer::default().recognize(input)
-}
-
 /// Recognized item.
-#[derive(Default, Debug)]
-pub struct Item {
+#[derive(Default)]
+struct Item {
     /// Line number where the node indentation starts.
-    pub indent_line: usize,
+    indent_line: usize,
     /// Number of whitespaces in indentation.
-    pub indent_width: usize,
+    indent_width: usize,
     /// Node delimiter.
-    pub delimiter: Option<char>,
+    delimiter: Option<char>,
     /// Node name.
-    pub name: String,
+    name: String,
     /// Node content.
-    pub content: String,
+    content: String,
 }
 
 /// Recognizer state.
@@ -121,10 +117,10 @@ struct Recognizer {
 impl Recognizer {
     /// Recognizes node items in the input text.
     #[allow(clippy::too_many_lines)]
-    fn recognize(mut self, input: impl AsRef<str>) -> Result<Vec<Item>> {
+    fn recognize(mut self, input: &str) -> Result<Vec<Item>> {
         let mut last_line = 0;
         let mut last_column = 0;
-        let mut chars = input.as_ref().chars().annotated();
+        let mut chars = input.chars().annotated();
         loop {
             let current_char = chars.next();
             if let Some(annotated_char) = current_char {
