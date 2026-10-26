@@ -89,7 +89,7 @@ impl Display for DimlError {
             } => {
                 write!(
                     f,
-                    "invalid indentation {indent}, expected multiplication of {multiplier} spaces at line {line}, column {column}"
+                    "invalid indentation {indent}, expected a multiple of {multiplier} spaces at line {line}, column {column}"
                 )
             }
             DimlError::UnexpectedIndentationCharacter { ch, line, column } => {

@@ -146,7 +146,7 @@ fn _0014() {
    .D
 ";
     assert_eq!(
-        "invalid indentation 3, expected multiplication of 4 spaces at line 4, column 3",
+        "invalid indentation 3, expected a multiple of 4 spaces at line 4, column 3",
         parse(input).unwrap_err().to_string()
     );
 }
@@ -160,7 +160,7 @@ fn _0015() {
     .D
 ";
     assert_eq!(
-        "invalid indentation 4, expected multiplication of 8 spaces at line 3, column 4",
+        "invalid indentation 4, expected a multiple of 8 spaces at line 3, column 4",
         parse(input).unwrap_err().to_string()
     );
 }
