@@ -46,9 +46,9 @@ fn _0001() {
         .collect::<Vec<&str>>();
     assert_eq!(
         vec![
-            "business analysts",
-            "software developers",
-            "data engineers",
+            "business analysis",
+            "software development",
+            "data engineering",
             "devops"
         ],
         domain_values

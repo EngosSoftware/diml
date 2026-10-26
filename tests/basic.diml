@@ -1,9 +1,9 @@
 .comment A sample DIML file
 .company Engos Software
 .domains
-    . business analysts
-    . software developers
-    . data engineers
+    . business analysis
+    . software development
+    . data engineering
     . devops
 .tutorial
     .diml
@@ -21,6 +21,6 @@
     .xml:
         .name Extensible Markup Language
         .type Good!
-        .born 1998
+        .born 1996
 .author Dariusz Depta
 .published true
