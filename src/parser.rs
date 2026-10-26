@@ -14,7 +14,6 @@ use anch::{Annotated, AnnotatedChar};
 /// Will return `Err` when parsing the input text fails.
 pub fn parse(input: &str) -> Result<Node> {
     let mut nodes = vec![];
-    let mut stack = vec![];
     let mut multiplier = 0;
     for item in Parser::default().parse(input)? {
         if multiplier == 0 && item.indent_width > 0 {
@@ -41,6 +40,7 @@ pub fn parse(input: &str) -> Result<Node> {
         let node = Node::new(level, item.delimiter, item.name, item.content);
         nodes.push(node);
     }
+    let mut stack = vec![];
     for mut node in nodes.drain(..).rev() {
         while let Some(child) = stack.pop_if(|last: &mut Node| last.level() > node.level()) {
             node.add_child(child);
