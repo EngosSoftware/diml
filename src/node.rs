@@ -9,7 +9,7 @@ pub struct Node {
     level: usize,
     /// Name delimiter.
     /// Delimiter character as defined in parsed document.
-    /// Root (virtual) node hss no delimiter.
+    /// Root (virtual) node has no delimiter.
     delimiter: Option<char>,
     /// The name of the node.
     /// Node name as defined in parsed document without delimiter.
