@@ -15,6 +15,7 @@ use anch::{Annotated, AnnotatedChar};
 pub fn parse(input: &str) -> Result<Node> {
     let mut nodes = vec![];
     let mut multiplier = 0;
+    let mut last_level = 0;
     for item in Parser::default().parse(input)? {
         if multiplier == 0 && item.indent_width > 0 {
             multiplier = item.indent_width;
@@ -28,10 +29,9 @@ pub fn parse(input: &str) -> Result<Node> {
             ));
         }
         let level = item.indent_width.checked_div(multiplier).unwrap_or(0) + 1;
-        let previous_level = nodes.last().map_or(0, |node: &Node| node.level());
-        if level > previous_level + 1 {
+        if level > last_level + 1 {
             return Err(err_skipped_indentation_level(
-                previous_level,
+                last_level,
                 level,
                 item.indent_line,
                 item.indent_width,
@@ -39,6 +39,7 @@ pub fn parse(input: &str) -> Result<Node> {
         }
         let node = Node::new(level, item.delimiter, item.name, item.content);
         nodes.push(node);
+        last_level = level;
     }
     let mut stack = vec![];
     for mut node in nodes.drain(..).rev() {
@@ -85,6 +86,7 @@ enum State {
     NodeContent,
 }
 
+/// Parser.
 #[derive(Default)]
 struct Parser {
     /// Parser state.
@@ -105,7 +107,7 @@ struct Parser {
 
 impl Parser {
     /// Parses items in the input text.
-    #[allow(clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines)]
     fn parse(mut self, input: &str) -> Result<Vec<Item>> {
         let mut last_line = 0;
         let mut last_column = 0;
