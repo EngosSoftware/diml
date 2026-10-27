@@ -146,7 +146,7 @@ fn _0014() {
    .D
 ";
     assert_eq!(
-        "invalid indentation 3, expected a multiple of 4 spaces at line 4, column 3",
+        "invalid indentation 3, expected a multiple of 4 spaces at line 4, column 4",
         parse(input).unwrap_err().to_string()
     );
 }
@@ -160,7 +160,7 @@ fn _0015() {
     .D
 ";
     assert_eq!(
-        "invalid indentation 4, expected a multiple of 8 spaces at line 3, column 4",
+        "invalid indentation 4, expected a multiple of 8 spaces at line 3, column 5",
         parse(input).unwrap_err().to_string()
     );
 }
@@ -190,7 +190,7 @@ fn _0018() {
     // Skipped indentation level when nesting.
     let input = ".A\n  .B\n      .C\n";
     assert_eq!(
-        "skipped indentation level, jump from level 2 to level 4 at line 3, column 6",
+        "skipped indentation level, jump from level 2 to level 4 at line 3, column 7",
         parse(input).unwrap_err().to_string()
     );
 }
@@ -200,7 +200,7 @@ fn _0019() {
     // Skipped indentation level after continuation in a lower level.
     let input = ".A\n  .B\n.C\n    .D\n";
     assert_eq!(
-        "skipped indentation level, jump from level 1 to level 3 at line 4, column 4",
+        "skipped indentation level, jump from level 1 to level 3 at line 4, column 5",
         parse(input).unwrap_err().to_string()
     );
 }

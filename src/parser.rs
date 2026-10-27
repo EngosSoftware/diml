@@ -66,7 +66,7 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
                 item.indent,
                 multiplier,
                 item.line,
-                item.indent,
+                item.indent + 1,
             ));
         }
         let level = item.indent.checked_div(multiplier).unwrap_or(0) + 1;
@@ -75,7 +75,7 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
                 last_level,
                 level,
                 item.line,
-                item.indent,
+                item.indent + 1,
             ));
         }
         last_level = level;
