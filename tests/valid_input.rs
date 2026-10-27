@@ -3,7 +3,7 @@ use diml::parse;
 #[test]
 fn _0001() {
     let root = parse(".\n").unwrap();
-    assert_eq!(1, root.child_count());
+    assert_eq!(1, root.children().len());
     assert_eq!(0, root.level());
     assert_eq!(None, root.delimiter());
     assert_eq!("", root.name());
@@ -14,7 +14,7 @@ fn _0001() {
 #[test]
 fn _0002() {
     let root = parse("-\n").unwrap();
-    assert_eq!(1, root.child_count());
+    assert_eq!(1, root.children().len());
     let node = root.children().next().unwrap();
     assert_eq!(1, node.level());
     assert_eq!('-', node.delimiter().unwrap());

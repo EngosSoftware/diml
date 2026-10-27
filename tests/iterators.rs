@@ -35,11 +35,9 @@ fn _0001() {
     .D
 ";
     let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    assert_eq!(1, root.child_count());
+    assert_eq!(1, root.children().len());
     let node = root.children().next().unwrap();
-    assert_eq!(6, node.children().count());
-    assert_eq!(6, node.child_count());
+    assert_eq!(6, node.children().len());
     assert_eq!('.', node.delimiter().unwrap());
     assert_eq!("A", node.name());
     assert_eq!("\n", node.content());
@@ -99,4 +97,27 @@ fn _0004() {
     assert_eq!(vec!["C", "D", "D", "D"], excluding_names(node, &["B"]));
     assert_eq!(vec!["C"], excluding_names(node, &["B", "D"]));
     assert_eq!(vec!["D", "D", "D"], excluding_names(node, &["C", "B"]));
+}
+
+#[test]
+fn _0005() {
+    let input = r".A
+    .B
+    .C
+    .D
+    .E
+    .F
+    .G
+";
+    let root = parse(input).unwrap();
+    let node = root.children().next().unwrap();
+    assert_eq!(6, node.children().count());
+    assert_eq!(6, node.children().len());
+    assert_eq!(
+        vec!["G", "F", "E", "D", "C", "B"],
+        node.children()
+            .rev()
+            .map(|node| node.name().to_string())
+            .collect::<Vec<String>>()
+    );
 }

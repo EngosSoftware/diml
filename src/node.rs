@@ -115,7 +115,7 @@ impl Node {
     }
 
     /// Returns an iterator over all child nodes.
-    pub fn children(&self) -> impl Iterator<Item = &Self> {
+    pub fn children(&self) -> std::slice::Iter<'_, Self> {
         self.children.iter()
     }
 
@@ -151,11 +151,5 @@ impl Node {
         self.children
             .iter()
             .filter(|node| !names.iter().any(|name| name.as_ref() == node.name))
-    }
-
-    /// Returns the number of child nodes.
-    #[must_use]
-    pub const fn child_count(&self) -> usize {
-        self.children.len()
     }
 }
