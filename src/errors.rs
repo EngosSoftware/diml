@@ -18,7 +18,7 @@ pub enum DimlError {
         char,
         /// Line number.
         usize,
-        /// Column number
+        /// Column number.
         usize,
     ),
     /// Reports a missing newline at the end of the last line.
