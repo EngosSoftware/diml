@@ -6,6 +6,7 @@ use crate::errors::{
 };
 use crate::{DimlError, Node};
 use anch::{Annotated, AnnotatedChar};
+use std::mem::take;
 
 /// Parses the input text.
 ///
@@ -95,8 +96,8 @@ struct Parser {
     indentation: String,
     /// Current delimiter.
     delimiter: Option<char>,
-    /// Current node name.
-    name: String,
+    // /// Current node name.
+    // name: String,
     /// Parsed items.
     items: Vec<Item>,
 }
@@ -127,7 +128,8 @@ impl Parser {
                 State::NewLine => match annotated_character {
                     AnnotatedChar::Character(ch, line, _) => {
                         if self.delimiter == Some(ch) {
-                            self.consume_content(&mut item);
+                            item.delimiter = self.delimiter;
+                            self.items.push(take(&mut item));
                             item.indent_line = line;
                             item.indent_width = 0;
                             self.state = State::NodeName;
@@ -146,9 +148,8 @@ impl Parser {
                 State::NodeName => match annotated_character {
                     AnnotatedChar::Character(ch, line, column) => {
                         if is_allowed(ch) {
-                            self.name.push(ch);
+                            item.name.push(ch);
                         } else if ch.is_whitespace() {
-                            self.consume_name(&mut item);
                             item.content.push(ch);
                             self.state = State::NodeContent;
                         } else {
@@ -156,7 +157,6 @@ impl Parser {
                         }
                     }
                     AnnotatedChar::LineEnding(line_ending, ..) => {
-                        self.consume_name(&mut item);
                         item.content.push_str(line_ending.as_ref());
                         self.state = State::NewLine;
                     }
@@ -164,7 +164,8 @@ impl Parser {
                 State::Indentation => match annotated_character {
                     AnnotatedChar::Character(ch, line, _) => {
                         if self.delimiter == Some(ch) {
-                            self.consume_content(&mut item);
+                            item.delimiter = self.delimiter;
+                            self.items.push(take(&mut item));
                             self.consume_indentation(line, &mut item)?;
                             self.state = State::NodeName;
                         } else if ch.is_whitespace() {
@@ -194,7 +195,10 @@ impl Parser {
         }
         match self.state {
             State::Start => return Err(DimlError::EmptyInput),
-            State::NewLine => self.consume_content(&mut item),
+            State::NewLine => {
+                item.delimiter = self.delimiter;
+                self.items.push(take(&mut item));
+            }
             _ => return Err(err_missing_newline(position.0, position.1 + 1)),
         }
         Ok(self.items)
@@ -214,17 +218,6 @@ impl Parser {
         item.indent_width = self.indentation.len();
         self.indentation.clear();
         Ok(())
-    }
-
-    /// Consumes the node name.
-    fn consume_name(&mut self, item: &mut Item) {
-        item.delimiter = self.delimiter;
-        item.name = std::mem::take(&mut self.name);
-    }
-
-    /// Consumes the node content.
-    fn consume_content(&mut self, item: &mut Item) {
-        self.items.push(std::mem::take(item));
     }
 }
 
