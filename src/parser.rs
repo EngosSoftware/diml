@@ -3,7 +3,6 @@
 use crate::errors::Result;
 use crate::{DimlError, Node};
 use anch::{Annotated, AnnotatedChar};
-use std::mem::take;
 
 /// Parses the input text.
 ///
@@ -91,34 +90,31 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
     let mut state = State::Start;
     let mut items = vec![];
     let mut delimiter = None;
-    let mut item = Item::default();
-    let mut pos = (0, 0);
+    let mut position = (0, 0);
     let mut indentation = String::new();
+    let mut item = Item::default();
     for annotated_character in input.chars().annotated() {
-        pos = annotated_character.position();
+        position = annotated_character.position();
         match state {
             State::Start => match annotated_character {
                 AnnotatedChar::Character(ch, line, column) => {
                     if is_allowed_character(ch) {
                         delimiter = Some(ch);
-                        item.line = line;
-                        item.indent = 0;
+                        (item.line, item.indent) = (line, 0);
                         state = State::NodeName;
                     } else {
                         return Err(DimlError::UnexpectedCharacter(ch, line, column));
                     }
                 }
-                AnnotatedChar::LineEnding(line_ending, line, column) => {
-                    let ch = line_ending.first();
-                    return Err(DimlError::UnexpectedCharacter(ch, line, column));
+                AnnotatedChar::LineEnding(le, line, column) => {
+                    return Err(DimlError::UnexpectedCharacter(le.first(), line, column));
                 }
             },
             State::NewLine => match annotated_character {
                 AnnotatedChar::Character(ch, line, _) => {
                     if delimiter == Some(ch) {
-                        items.push(take(&mut item));
-                        item.line = line;
-                        item.indent = 0;
+                        items.push(std::mem::take(&mut item));
+                        (item.line, item.indent) = (line, 0);
                         state = State::NodeName;
                     } else if ch.is_whitespace() {
                         indentation.push(ch);
@@ -128,8 +124,8 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
                         state = State::NodeContent;
                     }
                 }
-                AnnotatedChar::LineEnding(line_ending, ..) => {
-                    item.content.push_str(line_ending.as_ref());
+                AnnotatedChar::LineEnding(le, ..) => {
+                    item.content.push_str(le.as_ref());
                 }
             },
             State::NodeName => match annotated_character {
@@ -143,19 +139,18 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
                         return Err(DimlError::UnexpectedCharacter(ch, line, column));
                     }
                 }
-                AnnotatedChar::LineEnding(line_ending, ..) => {
-                    item.content.push_str(line_ending.as_ref());
+                AnnotatedChar::LineEnding(le, ..) => {
+                    item.content.push_str(le.as_ref());
                     state = State::NewLine;
                 }
             },
             State::Indentation => match annotated_character {
                 AnnotatedChar::Character(ch, line, _) => {
                     if delimiter == Some(ch) {
-                        items.push(take(&mut item));
+                        items.push(std::mem::take(&mut item));
                         item.line = line;
-                        item.indent = validate_indentation(&indentation, item.line)?;
+                        item.indent = validate_indentation(&indentation, line)?;
                         indentation.clear();
-
                         state = State::NodeName;
                     } else if ch.is_whitespace() {
                         indentation.push(ch);
@@ -166,16 +161,16 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
                         state = State::NodeContent;
                     }
                 }
-                AnnotatedChar::LineEnding(line_ending, ..) => {
-                    item.content.extend([&indentation, line_ending.as_ref()]);
+                AnnotatedChar::LineEnding(le, ..) => {
+                    item.content.extend([&indentation, le.as_ref()]);
                     indentation.clear();
                     state = State::NewLine;
                 }
             },
             State::NodeContent => match annotated_character {
                 AnnotatedChar::Character(ch, ..) => item.content.push(ch),
-                AnnotatedChar::LineEnding(line_ending, ..) => {
-                    item.content.push_str(line_ending.as_ref());
+                AnnotatedChar::LineEnding(le, ..) => {
+                    item.content.push_str(le.as_ref());
                     state = State::NewLine;
                 }
             },
@@ -183,8 +178,8 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
     }
     match state {
         State::Start => return Err(DimlError::EmptyInput),
-        State::NewLine => items.push(take(&mut item)),
-        _ => return Err(DimlError::MissingNewline(pos.0, pos.1 + 1)),
+        State::NewLine => items.push(std::mem::take(&mut item)),
+        _ => return Err(DimlError::MissingNewline(position.0, position.1 + 1)),
     }
     Ok((items, delimiter))
 }
