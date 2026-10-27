@@ -105,37 +105,15 @@ struct Parser {
     items: Vec<Item>,
 }
 
-struct Position {
-    line: usize,
-    column: usize,
-}
-
-impl From<(usize, usize)> for Position {
-    fn from(value: (usize, usize)) -> Self {
-        Self {
-            line: value.0,
-            column: value.1,
-        }
-    }
-}
-
 impl Parser {
     /// Parses items in the input text.
-    #[expect(clippy::too_many_lines)]
     fn parse(mut self, input: &str) -> Result<Vec<Item>> {
-        let mut pos: Position = (0, 0).into();
-        let mut chars = input.chars().annotated();
-        loop {
-            let current_char = chars.next();
-            if let Some(annotated_char) = current_char {
-                pos = annotated_char.position().into();
-            }
+        let mut position = (0, 0);
+        for annotated_character in input.chars().annotated() {
+            position = annotated_character.position();
             match self.state {
-                State::Start => match current_char {
-                    None => {
-                        return Err(DimlError::EmptyInput);
-                    }
-                    Some(AnnotatedChar::Character(ch, line, column)) => {
+                State::Start => match annotated_character {
+                    AnnotatedChar::Character(ch, line, column) => {
                         if is_allowed(ch) {
                             self.delimiter = Some(ch);
                             self.item.indent_line = line;
@@ -145,16 +123,12 @@ impl Parser {
                             return Err(err_unexpected_character(ch, line, column));
                         }
                     }
-                    Some(AnnotatedChar::LineEnding(line_ending, line, column)) => {
+                    AnnotatedChar::LineEnding(line_ending, line, column) => {
                         return Err(err_unexpected_character(line_ending.first(), line, column));
                     }
                 },
-                State::NewLine => match current_char {
-                    None => {
-                        self.consume_content();
-                        break;
-                    }
-                    Some(AnnotatedChar::Character(ch, line, _)) => {
+                State::NewLine => match annotated_character {
+                    AnnotatedChar::Character(ch, line, _) => {
                         if self.delimiter == Some(ch) {
                             self.consume_content();
                             self.item.indent_line = line;
@@ -168,15 +142,12 @@ impl Parser {
                             self.state = State::NodeContent;
                         }
                     }
-                    Some(AnnotatedChar::LineEnding(line_ending, ..)) => {
-                        self.content.push_str(line_ending.as_ref());
+                    AnnotatedChar::LineEnding(line_ending, ..) => {
+                        self.content.push_str(line_ending.as_ref())
                     }
                 },
-                State::NodeName => match current_char {
-                    None => {
-                        return Err(err_missing_newline(pos.line, pos.column + 1));
-                    }
-                    Some(AnnotatedChar::Character(ch, line, column)) => {
+                State::NodeName => match annotated_character {
+                    AnnotatedChar::Character(ch, line, column) => {
                         if is_allowed(ch) {
                             self.name.push(ch);
                         } else if ch.is_whitespace() {
@@ -187,17 +158,14 @@ impl Parser {
                             return Err(err_unexpected_character(ch, line, column));
                         }
                     }
-                    Some(AnnotatedChar::LineEnding(line_ending, ..)) => {
+                    AnnotatedChar::LineEnding(line_ending, ..) => {
                         self.consume_name();
                         self.content.push_str(line_ending.as_ref());
                         self.state = State::NewLine;
                     }
                 },
-                State::Indentation => match current_char {
-                    None => {
-                        return Err(err_missing_newline(pos.line, pos.column + 1));
-                    }
-                    Some(AnnotatedChar::Character(ch, line, _)) => {
+                State::Indentation => match annotated_character {
+                    AnnotatedChar::Character(ch, line, _) => {
                         if self.delimiter == Some(ch) {
                             self.consume_content();
                             self.consume_indentation(line)?;
@@ -211,26 +179,26 @@ impl Parser {
                             self.state = State::NodeContent;
                         }
                     }
-                    Some(AnnotatedChar::LineEnding(line_ending, ..)) => {
+                    AnnotatedChar::LineEnding(line_ending, ..) => {
                         self.content.push_str(&self.indentation);
                         self.content.push_str(line_ending.as_ref());
                         self.indentation.clear();
                         self.state = State::NewLine;
                     }
                 },
-                State::NodeContent => match current_char {
-                    None => {
-                        return Err(err_missing_newline(pos.line, pos.column + 1));
-                    }
-                    Some(AnnotatedChar::Character(ch, ..)) => {
-                        self.content.push(ch);
-                    }
-                    Some(AnnotatedChar::LineEnding(line_ending, ..)) => {
+                State::NodeContent => match annotated_character {
+                    AnnotatedChar::Character(ch, ..) => self.content.push(ch),
+                    AnnotatedChar::LineEnding(line_ending, ..) => {
                         self.content.push_str(line_ending.as_ref());
                         self.state = State::NewLine;
                     }
                 },
             }
+        }
+        match self.state {
+            State::Start => return Err(DimlError::EmptyInput),
+            State::NewLine => self.consume_content(),
+            _ => return Err(err_missing_newline(position.0, position.1 + 1)),
         }
         Ok(self.items)
     }
