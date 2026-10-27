@@ -17,7 +17,8 @@ pub fn parse(input: &str) -> Result<Node> {
     let mut nodes = vec![];
     let mut multiplier = 0;
     let mut last_level = 0;
-    for item in Parser::default().parse(input)? {
+    let (items, delimiter) = Parser::default().parse(input)?;
+    for item in items {
         if multiplier == 0 && item.indent_width > 0 {
             multiplier = item.indent_width;
         }
@@ -38,7 +39,7 @@ pub fn parse(input: &str) -> Result<Node> {
                 item.indent_width,
             ));
         }
-        let node = Node::new(level, item.delimiter, item.name, item.content);
+        let node = Node::new(level, delimiter, item.name, item.content);
         nodes.push(node);
         last_level = level;
     }
@@ -63,8 +64,6 @@ struct Item {
     indent_line: usize,
     /// Number of whitespaces in indentation.
     indent_width: usize,
-    /// Node delimiter.
-    delimiter: Option<char>,
     /// Node name.
     name: String,
     /// Node content.
@@ -104,7 +103,7 @@ struct Parser {
 
 impl Parser {
     /// Parses items in the input text.
-    fn parse(mut self, input: &str) -> Result<Vec<Item>> {
+    fn parse(mut self, input: &str) -> Result<(Vec<Item>, Option<char>)> {
         let mut item = Item::default();
         let mut position = (0, 0);
         for annotated_character in input.chars().annotated() {
@@ -128,7 +127,6 @@ impl Parser {
                 State::NewLine => match annotated_character {
                     AnnotatedChar::Character(ch, line, _) => {
                         if self.delimiter == Some(ch) {
-                            item.delimiter = self.delimiter;
                             self.items.push(take(&mut item));
                             item.indent_line = line;
                             item.indent_width = 0;
@@ -164,7 +162,6 @@ impl Parser {
                 State::Indentation => match annotated_character {
                     AnnotatedChar::Character(ch, line, _) => {
                         if self.delimiter == Some(ch) {
-                            item.delimiter = self.delimiter;
                             self.items.push(take(&mut item));
                             self.consume_indentation(line, &mut item)?;
                             self.state = State::NodeName;
@@ -195,13 +192,10 @@ impl Parser {
         }
         match self.state {
             State::Start => return Err(DimlError::EmptyInput),
-            State::NewLine => {
-                item.delimiter = self.delimiter;
-                self.items.push(take(&mut item));
-            }
+            State::NewLine => self.items.push(take(&mut item)),
             _ => return Err(err_missing_newline(position.0, position.1 + 1)),
         }
-        Ok(self.items)
+        Ok((self.items, self.delimiter))
     }
 
     /// Consumes the node indentation.
