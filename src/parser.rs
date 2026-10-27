@@ -97,10 +97,6 @@ struct Parser {
     delimiter: Option<char>,
     /// Current node name.
     name: String,
-    /// Current node content.
-    content: String,
-    // /// Current item.
-    // item: Item,
     /// Parsed items.
     items: Vec<Item>,
 }
@@ -139,12 +135,12 @@ impl Parser {
                             self.indentation.push(ch);
                             self.state = State::Indentation;
                         } else {
-                            self.content.push(ch);
+                            item.content.push(ch);
                             self.state = State::NodeContent;
                         }
                     }
                     AnnotatedChar::LineEnding(line_ending, ..) => {
-                        self.content.push_str(line_ending.as_ref())
+                        item.content.push_str(line_ending.as_ref())
                     }
                 },
                 State::NodeName => match annotated_character {
@@ -153,7 +149,7 @@ impl Parser {
                             self.name.push(ch);
                         } else if ch.is_whitespace() {
                             self.consume_name(&mut item);
-                            self.content.push(ch);
+                            item.content.push(ch);
                             self.state = State::NodeContent;
                         } else {
                             return Err(err_unexpected_character(ch, line, column));
@@ -161,7 +157,7 @@ impl Parser {
                     }
                     AnnotatedChar::LineEnding(line_ending, ..) => {
                         self.consume_name(&mut item);
-                        self.content.push_str(line_ending.as_ref());
+                        item.content.push_str(line_ending.as_ref());
                         self.state = State::NewLine;
                     }
                 },
@@ -174,23 +170,23 @@ impl Parser {
                         } else if ch.is_whitespace() {
                             self.indentation.push(ch);
                         } else {
-                            self.content.push_str(&self.indentation);
-                            self.content.push(ch);
+                            item.content.push_str(&self.indentation);
+                            item.content.push(ch);
                             self.indentation.clear();
                             self.state = State::NodeContent;
                         }
                     }
                     AnnotatedChar::LineEnding(line_ending, ..) => {
-                        self.content.push_str(&self.indentation);
-                        self.content.push_str(line_ending.as_ref());
+                        item.content.push_str(&self.indentation);
+                        item.content.push_str(line_ending.as_ref());
                         self.indentation.clear();
                         self.state = State::NewLine;
                     }
                 },
                 State::NodeContent => match annotated_character {
-                    AnnotatedChar::Character(ch, ..) => self.content.push(ch),
+                    AnnotatedChar::Character(ch, ..) => item.content.push(ch),
                     AnnotatedChar::LineEnding(line_ending, ..) => {
-                        self.content.push_str(line_ending.as_ref());
+                        item.content.push_str(line_ending.as_ref());
                         self.state = State::NewLine;
                     }
                 },
@@ -228,7 +224,6 @@ impl Parser {
 
     /// Consumes the node content.
     fn consume_content(&mut self, item: &mut Item) {
-        item.content = std::mem::take(&mut self.content);
         self.items.push(std::mem::take(item));
     }
 }
