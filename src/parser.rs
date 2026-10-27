@@ -1,9 +1,6 @@
 //! # Parser implementation
 
-use crate::errors::{
-    Result, err_invalid_indentation, err_missing_newline, err_skipped_indentation_level,
-    err_unexpected_character, err_unexpected_indentation_character,
-};
+use crate::errors::Result;
 use crate::{DimlError, Node};
 use anch::{Annotated, AnnotatedChar};
 use std::mem::take;
@@ -66,7 +63,7 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
             multiplier = item.indent;
         }
         if multiplier > 0 && !item.indent.is_multiple_of(multiplier) {
-            return Err(err_invalid_indentation(
+            return Err(DimlError::InvalidIndentation(
                 item.indent,
                 multiplier,
                 item.line,
@@ -75,7 +72,7 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
         }
         let level = item.indent.checked_div(multiplier).unwrap_or(0) + 1;
         if level > last_level + 1 {
-            return Err(err_skipped_indentation_level(
+            return Err(DimlError::SkippedIndentation(
                 last_level,
                 level,
                 item.line,
@@ -95,10 +92,10 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
     let mut items = vec![];
     let mut delimiter = None;
     let mut item = Item::default();
-    let mut position = (0, 0);
+    let mut pos = (0, 0);
     let mut indentation = String::new();
     for annotated_character in input.chars().annotated() {
-        position = annotated_character.position();
+        pos = annotated_character.position();
         match state {
             State::Start => match annotated_character {
                 AnnotatedChar::Character(ch, line, column) => {
@@ -108,11 +105,12 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
                         item.indent = 0;
                         state = State::NodeName;
                     } else {
-                        return Err(err_unexpected_character(ch, line, column));
+                        return Err(DimlError::UnexpectedCharacter(ch, line, column));
                     }
                 }
                 AnnotatedChar::LineEnding(line_ending, line, column) => {
-                    return Err(err_unexpected_character(line_ending.first(), line, column));
+                    let ch = line_ending.first();
+                    return Err(DimlError::UnexpectedCharacter(ch, line, column));
                 }
             },
             State::NewLine => match annotated_character {
@@ -142,7 +140,7 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
                         item.content.push(ch);
                         state = State::NodeContent;
                     } else {
-                        return Err(err_unexpected_character(ch, line, column));
+                        return Err(DimlError::UnexpectedCharacter(ch, line, column));
                     }
                 }
                 AnnotatedChar::LineEnding(line_ending, ..) => {
@@ -186,7 +184,7 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
     match state {
         State::Start => return Err(DimlError::EmptyInput),
         State::NewLine => items.push(take(&mut item)),
-        _ => return Err(err_missing_newline(position.0, position.1 + 1)),
+        _ => return Err(DimlError::MissingNewline(pos.0, pos.1 + 1)),
     }
     Ok((items, delimiter))
 }
@@ -195,7 +193,11 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
 /// Valid indentation must contain only spaces.
 fn validate_indentation(indentation: &str, line: usize) -> Result<usize> {
     if let Some((column, ch)) = indentation.char_indices().find(|(_, ch)| *ch != ' ') {
-        Err(err_unexpected_indentation_character(ch, line, column + 1))
+        Err(DimlError::UnexpectedIndentationCharacter(
+            ch,
+            line,
+            column + 1,
+        ))
     } else {
         Ok(indentation.len())
     }
