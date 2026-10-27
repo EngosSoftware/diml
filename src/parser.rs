@@ -110,6 +110,15 @@ struct Position {
     column: usize,
 }
 
+impl From<(usize, usize)> for Position {
+    fn from(value: (usize, usize)) -> Self {
+        Self {
+            line: value.0,
+            column: value.1,
+        }
+    }
+}
+
 impl Parser {
     /// Parses items in the input text.
     #[expect(clippy::too_many_lines)]
@@ -119,8 +128,7 @@ impl Parser {
         loop {
             let current_char = chars.next();
             if let Some(annotated_char) = current_char {
-                let (line, column) = annotated_char.position();
-                pos = Position { line, column };
+                pos = annotated_char.position().into();
             }
             match self.state {
                 State::Start => match current_char {
