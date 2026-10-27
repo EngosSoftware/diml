@@ -1,10 +1,10 @@
 //! # Parser implementation
 
-use crate::Node;
 use crate::errors::{
-    Result, err_empty_input, err_invalid_indentation, err_missing_newline,
-    err_skipped_indentation_level, err_unexpected_character, err_unexpected_indentation_character,
+    Result, err_invalid_indentation, err_missing_newline, err_skipped_indentation_level,
+    err_unexpected_character, err_unexpected_indentation_character,
 };
+use crate::{DimlError, Node};
 use anch::{Annotated, AnnotatedChar};
 
 /// Parses the input text.
@@ -105,22 +105,27 @@ struct Parser {
     items: Vec<Item>,
 }
 
+struct Position {
+    line: usize,
+    column: usize,
+}
+
 impl Parser {
     /// Parses items in the input text.
     #[expect(clippy::too_many_lines)]
     fn parse(mut self, input: &str) -> Result<Vec<Item>> {
-        let mut last_line = 0;
-        let mut last_column = 0;
+        let mut pos = Position { line: 0, column: 0 };
         let mut chars = input.chars().annotated();
         loop {
             let current_char = chars.next();
             if let Some(annotated_char) = current_char {
-                (last_line, last_column) = annotated_char.position();
+                let (line, column) = annotated_char.position();
+                pos = Position { line, column };
             }
             match self.state {
                 State::Start => match current_char {
                     None => {
-                        return Err(err_empty_input());
+                        return Err(DimlError::EmptyInput);
                     }
                     Some(AnnotatedChar::Character(ch, line, column)) => {
                         if is_allowed(ch) {
@@ -161,7 +166,7 @@ impl Parser {
                 },
                 State::NodeName => match current_char {
                     None => {
-                        return Err(err_missing_newline(last_line, last_column + 1));
+                        return Err(err_missing_newline(pos.line, pos.column + 1));
                     }
                     Some(AnnotatedChar::Character(ch, line, column)) => {
                         if is_allowed(ch) {
@@ -182,7 +187,7 @@ impl Parser {
                 },
                 State::Indentation => match current_char {
                     None => {
-                        return Err(err_missing_newline(last_line, last_column + 1));
+                        return Err(err_missing_newline(pos.line, pos.column + 1));
                     }
                     Some(AnnotatedChar::Character(ch, line, _)) => {
                         if self.delimiter == Some(ch) {
@@ -207,7 +212,7 @@ impl Parser {
                 },
                 State::NodeContent => match current_char {
                     None => {
-                        return Err(err_missing_newline(last_line, last_column + 1));
+                        return Err(err_missing_newline(pos.line, pos.column + 1));
                     }
                     Some(AnnotatedChar::Character(ch, ..)) => {
                         self.content.push(ch);

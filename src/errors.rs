@@ -117,11 +117,6 @@ impl Display for DimlError {
 /// Implements [Error] trait for [`DimlError`].
 impl Error for DimlError {}
 
-/// Reports an empty input.
-pub(crate) fn err_empty_input() -> DimlError {
-    DimlError::EmptyInput
-}
-
 /// Reports an unexpected character encountered on input.
 pub(crate) fn err_unexpected_character(ch: char, line: usize, column: usize) -> DimlError {
     DimlError::UnexpectedCharacter { ch, line, column }
