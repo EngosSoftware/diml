@@ -31,10 +31,10 @@ pub fn parse(input: &str) -> Result<Node> {
 /// Parsed item.
 #[derive(Default)]
 struct Item {
-    /// Line number where the node indentation starts.
-    indent_line: usize,
-    /// Number of whitespaces in indentation.
-    indent_width: usize,
+    /// Line number where the item starts.
+    line: usize,
+    /// Number of whitespaces in the indentation.
+    indent: usize,
     /// Node name.
     name: String,
     /// Node content.
@@ -42,10 +42,8 @@ struct Item {
 }
 
 /// Parser state.
-#[derive(Default)]
 enum State {
     /// At the beginning of the input.
-    #[default]
     Start,
     /// At the beginning of the line.
     NewLine,
@@ -64,24 +62,24 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
     let mut last_level = 0;
     let (items, delimiter) = items(input)?;
     for item in items {
-        if multiplier == 0 && item.indent_width > 0 {
-            multiplier = item.indent_width;
+        if multiplier == 0 && item.indent > 0 {
+            multiplier = item.indent;
         }
-        if multiplier > 0 && !item.indent_width.is_multiple_of(multiplier) {
+        if multiplier > 0 && !item.indent.is_multiple_of(multiplier) {
             return Err(err_invalid_indentation(
-                item.indent_width,
+                item.indent,
                 multiplier,
-                item.indent_line,
-                item.indent_width,
+                item.line,
+                item.indent,
             ));
         }
-        let level = item.indent_width.checked_div(multiplier).unwrap_or(0) + 1;
+        let level = item.indent.checked_div(multiplier).unwrap_or(0) + 1;
         if level > last_level + 1 {
             return Err(err_skipped_indentation_level(
                 last_level,
                 level,
-                item.indent_line,
-                item.indent_width,
+                item.line,
+                item.indent,
             ));
         }
         let node = Node::new(level, Some(delimiter), item.name, item.content);
@@ -91,7 +89,7 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
     Ok(nodes)
 }
 
-/// Recognizes items in the input text.
+/// Recognizes items in the provided input.
 fn items(input: &str) -> Result<(Vec<Item>, char)> {
     let mut state = State::Start;
     let mut items = vec![];
@@ -106,8 +104,8 @@ fn items(input: &str) -> Result<(Vec<Item>, char)> {
                 AnnotatedChar::Character(ch, line, column) => {
                     if is_allowed_character(ch) {
                         delimiter = ch;
-                        item.indent_line = line;
-                        item.indent_width = 0;
+                        item.line = line;
+                        item.indent = 0;
                         state = State::NodeName;
                     } else {
                         return Err(err_unexpected_character(ch, line, column));
@@ -121,8 +119,8 @@ fn items(input: &str) -> Result<(Vec<Item>, char)> {
                 AnnotatedChar::Character(ch, line, _) => {
                     if delimiter == ch {
                         items.push(take(&mut item));
-                        item.indent_line = line;
-                        item.indent_width = 0;
+                        item.line = line;
+                        item.indent = 0;
                         state = State::NodeName;
                     } else if ch.is_whitespace() {
                         indentation.push(ch);
@@ -156,8 +154,8 @@ fn items(input: &str) -> Result<(Vec<Item>, char)> {
                 AnnotatedChar::Character(ch, line, _) => {
                     if delimiter == ch {
                         items.push(take(&mut item));
-                        item.indent_line = line;
-                        item.indent_width = validate_indentation(&indentation, item.indent_line)?;
+                        item.line = line;
+                        item.indent = validate_indentation(&indentation, item.line)?;
                         indentation.clear();
 
                         state = State::NodeName;
@@ -193,6 +191,8 @@ fn items(input: &str) -> Result<(Vec<Item>, char)> {
     Ok((items, delimiter))
 }
 
+/// Validates the indentation.
+/// Valid indentation must contain only spaces.
 fn validate_indentation(indentation: &str, line: usize) -> Result<usize> {
     if let Some((column, ch)) = indentation.char_indices().find(|(_, ch)| *ch != ' ') {
         Err(err_unexpected_indentation_character(ch, line, column + 1))
