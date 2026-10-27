@@ -42,7 +42,7 @@ pub fn parse(input: &str) -> Result<Node> {
         last_level = level;
     }
     let mut stack = vec![];
-    for mut node in nodes.drain(..).rev() {
+    for mut node in nodes.into_iter().rev() {
         while let Some(child) = stack.pop_if(|last: &mut Node| last.level() > node.level()) {
             node.add_child(child);
         }
