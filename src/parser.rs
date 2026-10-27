@@ -123,7 +123,7 @@ impl Parser {
     /// Parses items in the input text.
     #[expect(clippy::too_many_lines)]
     fn parse(mut self, input: &str) -> Result<Vec<Item>> {
-        let mut pos = Position { line: 0, column: 0 };
+        let mut pos: Position = (0, 0).into();
         let mut chars = input.chars().annotated();
         loop {
             let current_char = chars.next();
