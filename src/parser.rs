@@ -39,7 +39,7 @@ pub fn parse(input: &str) -> Result<Node> {
                 item.indent_width,
             ));
         }
-        let node = Node::new(level, delimiter, item.name, item.content);
+        let node = Node::new(level, Some(delimiter), item.name, item.content);
         nodes.push(node);
         last_level = level;
     }
@@ -93,17 +93,14 @@ struct Parser {
     state: State,
     /// Current indentation.
     indentation: String,
-    /// Current delimiter.
-    delimiter: Option<char>,
-    // /// Current node name.
-    // name: String,
     /// Parsed items.
     items: Vec<Item>,
 }
 
 impl Parser {
     /// Parses items in the input text.
-    fn parse(mut self, input: &str) -> Result<(Vec<Item>, Option<char>)> {
+    fn parse(mut self, input: &str) -> Result<(Vec<Item>, char)> {
+        let mut delimiter = 0 as char;
         let mut item = Item::default();
         let mut position = (0, 0);
         for annotated_character in input.chars().annotated() {
@@ -112,7 +109,7 @@ impl Parser {
                 State::Start => match annotated_character {
                     AnnotatedChar::Character(ch, line, column) => {
                         if is_allowed(ch) {
-                            self.delimiter = Some(ch);
+                            delimiter = ch;
                             item.indent_line = line;
                             item.indent_width = 0;
                             self.state = State::NodeName;
@@ -126,7 +123,7 @@ impl Parser {
                 },
                 State::NewLine => match annotated_character {
                     AnnotatedChar::Character(ch, line, _) => {
-                        if self.delimiter == Some(ch) {
+                        if delimiter == ch {
                             self.items.push(take(&mut item));
                             item.indent_line = line;
                             item.indent_width = 0;
@@ -140,7 +137,7 @@ impl Parser {
                         }
                     }
                     AnnotatedChar::LineEnding(line_ending, ..) => {
-                        item.content.push_str(line_ending.as_ref())
+                        item.content.push_str(line_ending.as_ref());
                     }
                 },
                 State::NodeName => match annotated_character {
@@ -161,7 +158,7 @@ impl Parser {
                 },
                 State::Indentation => match annotated_character {
                     AnnotatedChar::Character(ch, line, _) => {
-                        if self.delimiter == Some(ch) {
+                        if delimiter == ch {
                             self.items.push(take(&mut item));
                             self.consume_indentation(line, &mut item)?;
                             self.state = State::NodeName;
@@ -195,7 +192,7 @@ impl Parser {
             State::NewLine => self.items.push(take(&mut item)),
             _ => return Err(err_missing_newline(position.0, position.1 + 1)),
         }
-        Ok((self.items, self.delimiter))
+        Ok((self.items, delimiter))
     }
 
     /// Consumes the node indentation.
