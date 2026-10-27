@@ -21,7 +21,7 @@ pub struct Node {
     content: String,
     /// Child nodes.
     /// A list of all child nodes of this node.
-    children: Vec<Node>,
+    children: Vec<Self>,
 }
 
 impl std::fmt::Display for Node {
@@ -40,7 +40,7 @@ impl std::fmt::Display for Node {
 
 impl Node {
     /// Creates a root node.
-    pub(crate) fn root() -> Self {
+    pub(crate) const fn root() -> Self {
         Self {
             level: 0,
             delimiter: None,
@@ -51,7 +51,7 @@ impl Node {
     }
 
     /// Creates a new node.
-    pub(crate) fn new(
+    pub(crate) const fn new(
         level: usize,
         delimiter: Option<char>,
         name: String,
@@ -67,19 +67,19 @@ impl Node {
     }
 
     /// Adds a child node at the end of the children list.
-    pub(crate) fn add_child(&mut self, node: Node) {
+    pub(crate) fn add_child(&mut self, node: Self) {
         self.children.push(node);
     }
 
     /// Returns the indentation level of the node.
     #[must_use]
-    pub fn level(&self) -> usize {
+    pub const fn level(&self) -> usize {
         self.level
     }
 
     /// Returns the delimiter of the node.
     #[must_use]
-    pub fn delimiter(&self) -> Option<char> {
+    pub const fn delimiter(&self) -> Option<char> {
         self.delimiter
     }
 
@@ -102,12 +102,12 @@ impl Node {
     }
 
     /// Returns the first child node having the specified name.
-    pub fn first_with_name(&self, name: impl AsRef<str>) -> Option<&Node> {
+    pub fn first_with_name(&self, name: impl AsRef<str>) -> Option<&Self> {
         self.children.iter().find(|node| node.name == name.as_ref())
     }
 
     /// Returns the last child node having the specified name.
-    pub fn last_with_name(&self, name: impl AsRef<str>) -> Option<&Node> {
+    pub fn last_with_name(&self, name: impl AsRef<str>) -> Option<&Self> {
         self.children
             .iter()
             .rev()
@@ -115,12 +115,12 @@ impl Node {
     }
 
     /// Returns an iterator over all child nodes.
-    pub fn children(&self) -> impl Iterator<Item = &Node> {
+    pub fn children(&self) -> impl Iterator<Item = &Self> {
         self.children.iter()
     }
 
     /// Returns an iterator over child nodes that have the specified name.
-    pub fn with_name(&self, name: impl AsRef<str>) -> impl Iterator<Item = &Node> {
+    pub fn with_name(&self, name: impl AsRef<str>) -> impl Iterator<Item = &Self> {
         self.children
             .iter()
             .filter(move |node| node.name == name.as_ref())
@@ -130,14 +130,14 @@ impl Node {
     pub fn with_names<'a>(
         &'a self,
         names: &'a [impl AsRef<str>],
-    ) -> impl Iterator<Item = &'a Node> {
+    ) -> impl Iterator<Item = &'a Self> {
         self.children
             .iter()
             .filter(|node| names.iter().any(|name| name.as_ref() == node.name))
     }
 
     /// Returns an iterator over child nodes, excluding those with the specified name.
-    pub fn excluding_name(&self, name: impl AsRef<str>) -> impl Iterator<Item = &Node> {
+    pub fn excluding_name(&self, name: impl AsRef<str>) -> impl Iterator<Item = &Self> {
         self.children
             .iter()
             .filter(move |node| node.name != name.as_ref())
@@ -147,7 +147,7 @@ impl Node {
     pub fn excluding_names<'a>(
         &'a self,
         names: &'a [impl AsRef<str>],
-    ) -> impl Iterator<Item = &'a Node> {
+    ) -> impl Iterator<Item = &'a Self> {
         self.children
             .iter()
             .filter(|node| !names.iter().any(|name| name.as_ref() == node.name))
@@ -155,7 +155,7 @@ impl Node {
 
     /// Returns the number of child nodes.
     #[must_use]
-    pub fn child_count(&self) -> usize {
+    pub const fn child_count(&self) -> usize {
         self.children.len()
     }
 }

@@ -65,36 +65,36 @@ impl Display for DimlError {
     /// Implements [Display] trait for [`DimlError`].
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DimlError::EmptyInput => {
+            Self::EmptyInput => {
                 write!(f, "empty input")
             }
-            DimlError::UnexpectedCharacter(ch, line, column) => {
+            Self::UnexpectedCharacter(ch, line, column) => {
                 write!(
                     f,
                     "unexpected character '{}' at line {line}, column {column}",
                     ch.escape_debug()
                 )
             }
-            DimlError::MissingNewline(line, column) => {
+            Self::MissingNewline(line, column) => {
                 write!(
                     f,
                     "missing newline at the end of input at line {line}, column {column}"
                 )
             }
-            DimlError::InvalidIndentation(indent, multiplier, line, column) => {
+            Self::InvalidIndentation(indent, multiplier, line, column) => {
                 write!(
                     f,
                     "invalid indentation {indent}, expected a multiple of {multiplier} spaces at line {line}, column {column}"
                 )
             }
-            DimlError::UnexpectedIndentationCharacter(ch, line, column) => {
+            Self::UnexpectedIndentationCharacter(ch, line, column) => {
                 write!(
                     f,
                     "unexpected indentation character '{}' at line {line}, column {column}",
                     ch.escape_debug()
                 )
             }
-            DimlError::SkippedIndentation(previous, level, line, column) => {
+            Self::SkippedIndentation(previous, level, line, column) => {
                 write!(
                     f,
                     "skipped indentation level, jump from level {previous} to level {level} at line {line}, column {column}"
