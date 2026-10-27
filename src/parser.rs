@@ -83,17 +83,17 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
             ));
         }
         last_level = level;
-        let node = Node::new(level, Some(delimiter), item.name, item.content);
+        let node = Node::new(level, delimiter, item.name, item.content);
         nodes.push(node);
     }
     Ok(nodes)
 }
 
 /// Recognizes items in the provided input.
-fn items(input: &str) -> Result<(Vec<Item>, char)> {
+fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
     let mut state = State::Start;
     let mut items = vec![];
-    let mut delimiter = 0 as char;
+    let mut delimiter = None;
     let mut item = Item::default();
     let mut position = (0, 0);
     let mut indentation = String::new();
@@ -103,7 +103,7 @@ fn items(input: &str) -> Result<(Vec<Item>, char)> {
             State::Start => match annotated_character {
                 AnnotatedChar::Character(ch, line, column) => {
                     if is_allowed_character(ch) {
-                        delimiter = ch;
+                        delimiter = Some(ch);
                         item.line = line;
                         item.indent = 0;
                         state = State::NodeName;
@@ -117,7 +117,7 @@ fn items(input: &str) -> Result<(Vec<Item>, char)> {
             },
             State::NewLine => match annotated_character {
                 AnnotatedChar::Character(ch, line, _) => {
-                    if delimiter == ch {
+                    if delimiter == Some(ch) {
                         items.push(take(&mut item));
                         item.line = line;
                         item.indent = 0;
@@ -152,7 +152,7 @@ fn items(input: &str) -> Result<(Vec<Item>, char)> {
             },
             State::Indentation => match annotated_character {
                 AnnotatedChar::Character(ch, line, _) => {
-                    if delimiter == ch {
+                    if delimiter == Some(ch) {
                         items.push(take(&mut item));
                         item.line = line;
                         item.indent = validate_indentation(&indentation, item.line)?;
