@@ -7,7 +7,7 @@ use std::fmt::Display;
 pub type Result<T, E = DimlError> = std::result::Result<T, E>;
 
 /// Errors definition.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DimlError {
     /// Reports an empty input.
