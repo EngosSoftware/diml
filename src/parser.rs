@@ -56,7 +56,7 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
     let mut nodes = vec![];
     let mut multiplier = 0;
     let mut last_level = 0;
-    let (items, delimiter) = items(input)?;
+    let (items, delimiter) = Parser::new(0, 0).items(input)?;
     for item in items {
         if multiplier == 0 && item.indent > 0 {
             multiplier = item.indent;
@@ -85,121 +85,139 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
     Ok(nodes)
 }
 
-/// Recognizes items in the provided input.
-fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
-    let mut state = State::Start;
-    let mut items = vec![];
-    let mut delimiter = None;
-    let mut position = (0, 0);
-    let mut indentation = String::new();
-    let mut item = Item::default();
-    for annotated_character in input.chars().annotated() {
-        position = annotated_character.position();
-        match state {
-            State::Start => match annotated_character {
-                AnnotatedChar::Character(ch, line, column) => {
-                    if is_allowed_character(ch) {
-                        delimiter = Some(ch);
-                        (item.line, item.indent) = (line, 0);
-                        state = State::NodeName;
-                    } else {
-                        return Err(DimlError::UnexpectedCharacter(ch, line, column));
-                    }
-                }
-                AnnotatedChar::LineEnding(le, line, column) => {
-                    return Err(DimlError::UnexpectedCharacter(le.first(), line, column));
-                }
-            },
-            State::NewLine => match annotated_character {
-                AnnotatedChar::Character(ch, line, _) => {
-                    if delimiter == Some(ch) {
-                        items.push(std::mem::take(&mut item));
-                        (item.line, item.indent) = (line, 0);
-                        state = State::NodeName;
-                    } else if ch.is_whitespace() {
-                        indentation.push(ch);
-                        state = State::Indentation;
-                    } else {
-                        item.content.push(ch);
-                        state = State::NodeContent;
-                    }
-                }
-                AnnotatedChar::LineEnding(le, ..) => {
-                    item.content.push_str(le.as_ref());
-                }
-            },
-            State::NodeName => match annotated_character {
-                AnnotatedChar::Character(ch, line, column) => {
-                    if is_allowed_character(ch) {
-                        item.name.push(ch);
-                    } else if ch.is_whitespace() {
-                        item.content.push(ch);
-                        state = State::NodeContent;
-                    } else {
-                        return Err(DimlError::UnexpectedCharacter(ch, line, column));
-                    }
-                }
-                AnnotatedChar::LineEnding(le, ..) => {
-                    item.content.push_str(le.as_ref());
-                    state = State::NewLine;
-                }
-            },
-            State::Indentation => match annotated_character {
-                AnnotatedChar::Character(ch, line, _) => {
-                    if delimiter == Some(ch) {
-                        items.push(std::mem::take(&mut item));
-                        item.line = line;
-                        item.indent = validate_indentation(&indentation, line)?;
-                        indentation.clear();
-                        state = State::NodeName;
-                    } else if ch.is_whitespace() {
-                        indentation.push(ch);
-                    } else {
-                        item.content.push_str(&indentation);
-                        item.content.push(ch);
-                        indentation.clear();
-                        state = State::NodeContent;
-                    }
-                }
-                AnnotatedChar::LineEnding(le, ..) => {
-                    item.content.extend([&indentation, le.as_ref()]);
-                    indentation.clear();
-                    state = State::NewLine;
-                }
-            },
-            State::NodeContent => match annotated_character {
-                AnnotatedChar::Character(ch, ..) => item.content.push(ch),
-                AnnotatedChar::LineEnding(le, ..) => {
-                    item.content.push_str(le.as_ref());
-                    state = State::NewLine;
-                }
-            },
+struct Parser {
+    /// Maximum allowed number of parsed nodes.
+    _max_nodes: usize,
+    /// Maximum height of parsed tree.
+    _max_height: usize,
+    /// Parsed delimiter character.
+    delimiter: Option<char>,
+}
+
+impl Parser {
+    const fn new(max_nodes: usize, max_height: usize) -> Self {
+        Self {
+            _max_nodes: max_nodes,
+            _max_height: max_height,
+            delimiter: None,
         }
     }
-    match state {
-        State::Start => return Err(DimlError::EmptyInput),
-        State::NewLine => items.push(std::mem::take(&mut item)),
-        _ => return Err(DimlError::MissingNewline(position.0, position.1 + 1)),
-    }
-    Ok((items, delimiter))
-}
 
-/// Validates the indentation.
-/// Valid indentation must contain only spaces.
-fn validate_indentation(indentation: &str, line: usize) -> Result<usize> {
-    if let Some((column, ch)) = indentation.char_indices().find(|(_, ch)| *ch != ' ') {
-        Err(DimlError::UnexpectedIndentationCharacter(
-            ch,
-            line,
-            column + 1,
-        ))
-    } else {
-        Ok(indentation.len())
+    /// Recognizes items in the provided input.
+    fn items(&mut self, input: &str) -> Result<(Vec<Item>, Option<char>)> {
+        let mut state = State::Start;
+        let mut items = vec![];
+        let mut position = (0, 0);
+        let mut indentation = String::new();
+        let mut item = Item::default();
+        for annotated_character in input.chars().annotated() {
+            position = annotated_character.position();
+            match state {
+                State::Start => match annotated_character {
+                    AnnotatedChar::Character(ch, line, column) => {
+                        if Self::is_allowed_character(ch) {
+                            self.delimiter = Some(ch);
+                            (item.line, item.indent) = (line, 0);
+                            state = State::NodeName;
+                        } else {
+                            return Err(DimlError::UnexpectedCharacter(ch, line, column));
+                        }
+                    }
+                    AnnotatedChar::LineEnding(le, line, column) => {
+                        return Err(DimlError::UnexpectedCharacter(le.first(), line, column));
+                    }
+                },
+                State::NewLine => match annotated_character {
+                    AnnotatedChar::Character(ch, line, _) => {
+                        if self.delimiter == Some(ch) {
+                            items.push(std::mem::take(&mut item));
+                            (item.line, item.indent) = (line, 0);
+                            state = State::NodeName;
+                        } else if ch.is_whitespace() {
+                            indentation.push(ch);
+                            state = State::Indentation;
+                        } else {
+                            item.content.push(ch);
+                            state = State::NodeContent;
+                        }
+                    }
+                    AnnotatedChar::LineEnding(le, ..) => {
+                        item.content.push_str(le.as_ref());
+                    }
+                },
+                State::NodeName => match annotated_character {
+                    AnnotatedChar::Character(ch, line, column) => {
+                        if Self::is_allowed_character(ch) {
+                            item.name.push(ch);
+                        } else if ch.is_whitespace() {
+                            item.content.push(ch);
+                            state = State::NodeContent;
+                        } else {
+                            return Err(DimlError::UnexpectedCharacter(ch, line, column));
+                        }
+                    }
+                    AnnotatedChar::LineEnding(le, ..) => {
+                        item.content.push_str(le.as_ref());
+                        state = State::NewLine;
+                    }
+                },
+                State::Indentation => match annotated_character {
+                    AnnotatedChar::Character(ch, line, _) => {
+                        if self.delimiter == Some(ch) {
+                            items.push(std::mem::take(&mut item));
+                            item.line = line;
+                            item.indent = Self::validate_indentation(&indentation, line)?;
+                            indentation.clear();
+                            state = State::NodeName;
+                        } else if ch.is_whitespace() {
+                            indentation.push(ch);
+                        } else {
+                            item.content.push_str(&indentation);
+                            item.content.push(ch);
+                            indentation.clear();
+                            state = State::NodeContent;
+                        }
+                    }
+                    AnnotatedChar::LineEnding(le, ..) => {
+                        item.content.extend([&indentation, le.as_ref()]);
+                        indentation.clear();
+                        state = State::NewLine;
+                    }
+                },
+                State::NodeContent => match annotated_character {
+                    AnnotatedChar::Character(ch, ..) => item.content.push(ch),
+                    AnnotatedChar::LineEnding(le, ..) => {
+                        item.content.push_str(le.as_ref());
+                        state = State::NewLine;
+                    }
+                },
+            }
+        }
+        match state {
+            State::Start => return Err(DimlError::EmptyInput),
+            State::NewLine => items.push(std::mem::take(&mut item)),
+            _ => return Err(DimlError::MissingNewline(position.0, position.1 + 1)),
+        }
+        Ok((items, self.delimiter))
     }
-}
 
-/// Returns `true` when the specified character
-/// is a valid character for delimiter or a node name.
-fn is_allowed_character(ch: char) -> bool {
-    !ch.is_control() && !ch.is_whitespace()
+    /// Validates the indentation.
+    /// Valid indentation must contain only spaces.
+    fn validate_indentation(indentation: &str, line: usize) -> Result<usize> {
+        if let Some((column, ch)) = indentation.char_indices().find(|(_, ch)| *ch != ' ') {
+            Err(DimlError::UnexpectedIndentationCharacter(
+                ch,
+                line,
+                column + 1,
+            ))
+        } else {
+            Ok(indentation.len())
+        }
+    }
+
+    /// Returns `true` when the specified character
+    /// is a valid character for delimiter or a node name.
+    fn is_allowed_character(ch: char) -> bool {
+        !ch.is_control() && !ch.is_whitespace()
+    }
 }
