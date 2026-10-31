@@ -56,7 +56,9 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
     let mut nodes = vec![];
     let mut multiplier = 0;
     let mut last_level = 0;
-    let (items, delimiter) = Parser::new(0, 0).items(input)?;
+    let mut parser = Parser::new(0, 0);
+    parser.items(input)?;
+    let (items, delimiter) = (parser.items, parser.delimiter);
     for item in items {
         if multiplier == 0 && item.indent > 0 {
             multiplier = item.indent;
@@ -72,13 +74,14 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
         let level = item.indent.checked_div(multiplier).unwrap_or(0) + 1;
         if level > last_level + 1 {
             return Err(DimlError::SkippedIndentation(
-                last_level,
-                level,
+                last_level - 1,
+                level - 1,
                 item.line,
                 item.indent + 1,
             ));
         }
         last_level = level;
+        //let node = Node::new(item.level + 1, delimiter, item.name, item.content);
         let node = Node::new(level, delimiter, item.name, item.content);
         nodes.push(node);
     }
@@ -120,7 +123,7 @@ impl Parser {
     }
 
     /// Recognizes items in the provided input.
-    fn items(mut self, input: &str) -> Result<(Vec<Item>, Option<char>)> {
+    fn items(&mut self, input: &str) -> Result<()> {
         for anch in input.chars().annotated() {
             self.position = anch.position();
             match self.state {
@@ -141,7 +144,7 @@ impl Parser {
                 ));
             }
         }
-        Ok((self.items, self.delimiter))
+        Ok(())
     }
 
     fn process_start(&mut self, anch: AnnotatedChar) -> Result<()> {
@@ -242,16 +245,15 @@ impl Parser {
     /// Consumes the indentation.
     fn consume_indentation(&mut self) -> Result<()> {
         if let Some((column, ch)) = self.indentation.char_indices().find(|(_, ch)| *ch != ' ') {
-            Err(DimlError::UnexpectedIndentationCharacter(
+            return Err(DimlError::UnexpectedIndentationCharacter(
                 ch,
                 self.item.line,
                 column + 1,
-            ))
-        } else {
-            self.item.indent = self.indentation.len();
-            self.indentation.clear();
-            Ok(())
+            ));
         }
+        self.item.indent = self.indentation.len();
+        self.indentation.clear();
+        Ok(())
     }
 
     /// Consumes an item.
