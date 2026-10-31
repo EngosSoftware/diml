@@ -81,7 +81,6 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
             ));
         }
         last_level = level;
-        //let node = Node::new(item.level + 1, delimiter, item.name, item.content);
         let node = Node::new(level, delimiter, item.name, item.content);
         nodes.push(node);
     }
