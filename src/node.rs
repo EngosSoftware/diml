@@ -24,20 +24,6 @@ pub struct Node {
     children: Vec<Self>,
 }
 
-impl std::fmt::Display for Node {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let width = f.width().unwrap_or(2);
-        if let Some(delimiter) = self.delimiter {
-            let indent = self.level.saturating_sub(1) * width;
-            write!(f, "{:indent$}{delimiter}{}{}", "", self.name, self.content)?;
-        }
-        for child in &self.children {
-            write!(f, "{child:width$}")?;
-        }
-        Ok(())
-    }
-}
-
 impl Node {
     /// Creates a root node.
     pub(crate) const fn root() -> Self {

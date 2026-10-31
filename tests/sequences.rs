@@ -33,28 +33,43 @@
 
 use diml::parse;
 
+/// No name, no content.
 const A: &str = ".\n";
+
+/// No name, some content.
 const B: &str = ". b\n";
+
+/// Some name, no content.
 const C: &str = ".C\n";
+
+/// Some name, some content.
 const D: &str = ".D d\n";
 
-fn eq(node1: &str, node2: &str) {
-    let input = format!("{node1}{node2}");
-    assert_eq!(input, format!("{}", parse(&input).unwrap()));
+fn eq(node1: &str, node2: &str, name1: &str, content1: &str, name2: &str, content2: &str) {
+    let doc = parse(&format!("{node1}{node2}")).unwrap();
+    let mut children = doc.children();
+    let first = children.next().unwrap();
+    assert_eq!(Some('.'), first.delimiter());
+    assert_eq!(name1, first.name());
+    assert_eq!(content1, first.content());
+    let second = children.next().unwrap();
+    assert_eq!(Some('.'), second.delimiter());
+    assert_eq!(name2, second.name());
+    assert_eq!(content2, second.content());
 }
 
 #[test]
 fn sequences_should_work() {
-    eq(A, B);
-    eq(B, A);
-    eq(A, C);
-    eq(C, A);
-    eq(A, D);
-    eq(D, A);
-    eq(B, C);
-    eq(C, B);
-    eq(B, D);
-    eq(D, B);
-    eq(C, D);
-    eq(D, C);
+    eq(A, B, "", "\n", "", " b\n");
+    eq(B, A, "", " b\n", "", "\n");
+    eq(A, C, "", "\n", "C", "\n");
+    eq(C, A, "C", "\n", "", "\n");
+    eq(A, D, "", "\n", "D", " d\n");
+    eq(D, A, "D", " d\n", "", "\n");
+    eq(B, C, "", " b\n", "C", "\n");
+    eq(C, B, "C", "\n", "", " b\n");
+    eq(B, D, "", " b\n", "D", " d\n");
+    eq(D, B, "D", " d\n", "", " b\n");
+    eq(C, D, "C", "\n", "D", " d\n");
+    eq(D, C, "D", " d\n", "C", "\n");
 }
