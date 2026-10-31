@@ -187,8 +187,8 @@ impl Parser {
         Ok((self.items, self.delimiter))
     }
 
-    fn process_start(&mut self, ch: AnnotatedChar) -> Result<()> {
-        match ch {
+    fn process_start(&mut self, anch: AnnotatedChar) -> Result<()> {
+        match anch {
             AnnotatedChar::Character(ch, line, column) => {
                 if Self::is_allowed_character(ch) {
                     self.delimiter = Some(ch);
@@ -205,8 +205,8 @@ impl Parser {
         Ok(())
     }
 
-    fn process_newline(&mut self, ch: AnnotatedChar) {
-        match ch {
+    fn process_newline(&mut self, anch: AnnotatedChar) {
+        match anch {
             AnnotatedChar::Character(ch, line, _) => {
                 if self.delimiter == Some(ch) {
                     self.items.push(std::mem::take(&mut self.item));
