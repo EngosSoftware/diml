@@ -121,25 +121,19 @@ impl Parser {
 
     /// Recognizes items in the provided input.
     fn items(mut self, input: &str) -> Result<(Vec<Item>, Option<char>)> {
-        for annotated_character in input.chars().annotated() {
-            self.position = annotated_character.position();
+        for anch in input.chars().annotated() {
+            self.position = anch.position();
             match self.state {
-                State::Start => self.process_start(annotated_character)?,
-                State::NewLine => self.process_newline(annotated_character),
-                State::NodeName => self.process_node_name(annotated_character)?,
-                State::Indentation => self.process_indentation(annotated_character)?,
-                State::NodeContent => match annotated_character {
-                    AnnotatedChar::Character(ch, ..) => self.item.content.push(ch),
-                    AnnotatedChar::LineEnding(le, ..) => {
-                        self.item.content.push_str(le.as_ref());
-                        self.state = State::NewLine;
-                    }
-                },
+                State::Start => self.process_start(anch)?,
+                State::NewLine => self.process_newline(anch),
+                State::NodeName => self.process_node_name(anch)?,
+                State::Indentation => self.process_indentation(anch)?,
+                State::NodeContent => self.process_node_content(anch),
             }
         }
         match self.state {
             State::Start => return Err(DimlError::EmptyInput),
-            State::NewLine => self.items.push(std::mem::take(&mut self.item)),
+            State::NewLine => self.consume_item(),
             _ => {
                 return Err(DimlError::MissingNewline(
                     self.position.0,
@@ -172,7 +166,7 @@ impl Parser {
         match anch {
             AnnotatedChar::Character(ch, line, _) => {
                 if self.delimiter == Some(ch) {
-                    self.items.push(std::mem::take(&mut self.item));
+                    self.consume_item();
                     (self.item.line, self.item.indent) = (line, 0);
                     self.state = State::NodeName;
                 } else if ch.is_whitespace() {
@@ -235,8 +229,17 @@ impl Parser {
         Ok(())
     }
 
+    fn process_node_content(&mut self, anch: AnnotatedChar) {
+        match anch {
+            AnnotatedChar::Character(ch, ..) => self.item.content.push(ch),
+            AnnotatedChar::LineEnding(le, ..) => {
+                self.item.content.push_str(le.as_ref());
+                self.state = State::NewLine;
+            }
+        }
+    }
+
     /// Consumes the indentation.
-    /// Valid indentation must contain only spaces.
     fn consume_indentation(&mut self) -> Result<()> {
         if let Some((column, ch)) = self.indentation.char_indices().find(|(_, ch)| *ch != ' ') {
             Err(DimlError::UnexpectedIndentationCharacter(
@@ -249,6 +252,11 @@ impl Parser {
             self.indentation.clear();
             Ok(())
         }
+    }
+
+    /// Consumes an item.
+    fn consume_item(&mut self) {
+        self.items.push(std::mem::take(&mut self.item));
     }
 }
 
