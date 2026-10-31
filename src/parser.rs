@@ -127,29 +127,7 @@ impl Parser {
                 State::Start => self.process_start(annotated_character)?,
                 State::NewLine => self.process_newline(annotated_character),
                 State::NodeName => self.process_node_name(annotated_character)?,
-                State::Indentation => match annotated_character {
-                    AnnotatedChar::Character(ch, line, _) => {
-                        if self.delimiter == Some(ch) {
-                            self.items.push(std::mem::take(&mut self.item));
-                            self.item.line = line;
-                            self.item.indent = Self::validate_indentation(&self.indentation, line)?;
-                            self.indentation.clear();
-                            self.state = State::NodeName;
-                        } else if ch.is_whitespace() {
-                            self.indentation.push(ch);
-                        } else {
-                            self.item.content.push_str(&self.indentation);
-                            self.item.content.push(ch);
-                            self.indentation.clear();
-                            self.state = State::NodeContent;
-                        }
-                    }
-                    AnnotatedChar::LineEnding(le, ..) => {
-                        self.item.content.extend([&self.indentation, le.as_ref()]);
-                        self.indentation.clear();
-                        self.state = State::NewLine;
-                    }
-                },
+                State::Indentation => self.process_indentation(annotated_character)?,
                 State::NodeContent => match annotated_character {
                     AnnotatedChar::Character(ch, ..) => self.item.content.push(ch),
                     AnnotatedChar::LineEnding(le, ..) => {
@@ -175,7 +153,7 @@ impl Parser {
     fn process_start(&mut self, anch: AnnotatedChar) -> Result<()> {
         match anch {
             AnnotatedChar::Character(ch, line, column) => {
-                if Self::is_allowed_character(ch) {
+                if is_allowed_character(ch) {
                     self.delimiter = Some(ch);
                     (self.item.line, self.item.indent) = (line, 0);
                     self.state = State::NodeName;
@@ -214,7 +192,7 @@ impl Parser {
     fn process_node_name(&mut self, anch: AnnotatedChar) -> Result<()> {
         match anch {
             AnnotatedChar::Character(ch, line, column) => {
-                if Self::is_allowed_character(ch) {
+                if is_allowed_character(ch) {
                     self.item.name.push(ch);
                 } else if ch.is_whitespace() {
                     self.item.content.push(ch);
@@ -231,23 +209,51 @@ impl Parser {
         Ok(())
     }
 
-    /// Validates the indentation.
+    fn process_indentation(&mut self, anch: AnnotatedChar) -> Result<()> {
+        match anch {
+            AnnotatedChar::Character(ch, line, _) => {
+                if self.delimiter == Some(ch) {
+                    self.items.push(std::mem::take(&mut self.item));
+                    self.item.line = line;
+                    self.consume_indentation()?;
+                    self.state = State::NodeName;
+                } else if ch.is_whitespace() {
+                    self.indentation.push(ch);
+                } else {
+                    self.item.content.push_str(&self.indentation);
+                    self.item.content.push(ch);
+                    self.indentation.clear();
+                    self.state = State::NodeContent;
+                }
+            }
+            AnnotatedChar::LineEnding(le, ..) => {
+                self.item.content.extend([&self.indentation, le.as_ref()]);
+                self.indentation.clear();
+                self.state = State::NewLine;
+            }
+        }
+        Ok(())
+    }
+
+    /// Consumes the indentation.
     /// Valid indentation must contain only spaces.
-    fn validate_indentation(indentation: &str, line: usize) -> Result<usize> {
-        if let Some((column, ch)) = indentation.char_indices().find(|(_, ch)| *ch != ' ') {
+    fn consume_indentation(&mut self) -> Result<()> {
+        if let Some((column, ch)) = self.indentation.char_indices().find(|(_, ch)| *ch != ' ') {
             Err(DimlError::UnexpectedIndentationCharacter(
                 ch,
-                line,
+                self.item.line,
                 column + 1,
             ))
         } else {
-            Ok(indentation.len())
+            self.item.indent = self.indentation.len();
+            self.indentation.clear();
+            Ok(())
         }
     }
+}
 
-    /// Returns `true` when the specified character
-    /// is a valid character for delimiter or a node name.
-    fn is_allowed_character(ch: char) -> bool {
-        !ch.is_control() && !ch.is_whitespace()
-    }
+/// Returns `true` when the specified character
+/// is a valid character for delimiter or a node name.
+fn is_allowed_character(ch: char) -> bool {
+    !ch.is_control() && !ch.is_whitespace()
 }
