@@ -126,22 +126,7 @@ impl Parser {
             match self.state {
                 State::Start => self.process_start(annotated_character)?,
                 State::NewLine => self.process_newline(annotated_character),
-                State::NodeName => match annotated_character {
-                    AnnotatedChar::Character(ch, line, column) => {
-                        if Self::is_allowed_character(ch) {
-                            self.item.name.push(ch);
-                        } else if ch.is_whitespace() {
-                            self.item.content.push(ch);
-                            self.state = State::NodeContent;
-                        } else {
-                            return Err(DimlError::UnexpectedCharacter(ch, line, column));
-                        }
-                    }
-                    AnnotatedChar::LineEnding(le, ..) => {
-                        self.item.content.push_str(le.as_ref());
-                        self.state = State::NewLine;
-                    }
-                },
+                State::NodeName => self.process_node_name(annotated_character)?,
                 State::Indentation => match annotated_character {
                     AnnotatedChar::Character(ch, line, _) => {
                         if self.delimiter == Some(ch) {
@@ -224,6 +209,26 @@ impl Parser {
                 self.item.content.push_str(le.as_ref());
             }
         }
+    }
+
+    fn process_node_name(&mut self, anch: AnnotatedChar) -> Result<()> {
+        match anch {
+            AnnotatedChar::Character(ch, line, column) => {
+                if Self::is_allowed_character(ch) {
+                    self.item.name.push(ch);
+                } else if ch.is_whitespace() {
+                    self.item.content.push(ch);
+                    self.state = State::NodeContent;
+                } else {
+                    return Err(DimlError::UnexpectedCharacter(ch, line, column));
+                }
+            }
+            AnnotatedChar::LineEnding(le, ..) => {
+                self.item.content.push_str(le.as_ref());
+                self.state = State::NewLine;
+            }
+        }
+        Ok(())
     }
 
     /// Validates the indentation.
