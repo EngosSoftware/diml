@@ -90,16 +90,20 @@ struct Parser {
     _max_nodes: usize,
     /// Maximum height of parsed tree.
     _max_height: usize,
-    /// Parsed delimiter character.
+    /// Recognized delimiter character.
     delimiter: Option<char>,
+    /// Recognized item.
+    item: Item,
 }
 
 impl Parser {
-    const fn new(max_nodes: usize, max_height: usize) -> Self {
+    /// Creates an initialized parser.
+    fn new(max_nodes: usize, max_height: usize) -> Self {
         Self {
             _max_nodes: max_nodes,
             _max_height: max_height,
             delimiter: None,
+            item: Item::default(),
         }
     }
 
@@ -109,7 +113,6 @@ impl Parser {
         let mut items = vec![];
         let mut position = (0, 0);
         let mut indentation = String::new();
-        let mut item = Item::default();
         for annotated_character in input.chars().annotated() {
             position = annotated_character.position();
             match state {
@@ -117,7 +120,7 @@ impl Parser {
                     AnnotatedChar::Character(ch, line, column) => {
                         if Self::is_allowed_character(ch) {
                             self.delimiter = Some(ch);
-                            (item.line, item.indent) = (line, 0);
+                            (self.item.line, self.item.indent) = (line, 0);
                             state = State::NodeName;
                         } else {
                             return Err(DimlError::UnexpectedCharacter(ch, line, column));
@@ -130,64 +133,64 @@ impl Parser {
                 State::NewLine => match annotated_character {
                     AnnotatedChar::Character(ch, line, _) => {
                         if self.delimiter == Some(ch) {
-                            items.push(std::mem::take(&mut item));
-                            (item.line, item.indent) = (line, 0);
+                            items.push(std::mem::take(&mut self.item));
+                            (self.item.line, self.item.indent) = (line, 0);
                             state = State::NodeName;
                         } else if ch.is_whitespace() {
                             indentation.push(ch);
                             state = State::Indentation;
                         } else {
-                            item.content.push(ch);
+                            self.item.content.push(ch);
                             state = State::NodeContent;
                         }
                     }
                     AnnotatedChar::LineEnding(le, ..) => {
-                        item.content.push_str(le.as_ref());
+                        self.item.content.push_str(le.as_ref());
                     }
                 },
                 State::NodeName => match annotated_character {
                     AnnotatedChar::Character(ch, line, column) => {
                         if Self::is_allowed_character(ch) {
-                            item.name.push(ch);
+                            self.item.name.push(ch);
                         } else if ch.is_whitespace() {
-                            item.content.push(ch);
+                            self.item.content.push(ch);
                             state = State::NodeContent;
                         } else {
                             return Err(DimlError::UnexpectedCharacter(ch, line, column));
                         }
                     }
                     AnnotatedChar::LineEnding(le, ..) => {
-                        item.content.push_str(le.as_ref());
+                        self.item.content.push_str(le.as_ref());
                         state = State::NewLine;
                     }
                 },
                 State::Indentation => match annotated_character {
                     AnnotatedChar::Character(ch, line, _) => {
                         if self.delimiter == Some(ch) {
-                            items.push(std::mem::take(&mut item));
-                            item.line = line;
-                            item.indent = Self::validate_indentation(&indentation, line)?;
+                            items.push(std::mem::take(&mut self.item));
+                            self.item.line = line;
+                            self.item.indent = Self::validate_indentation(&indentation, line)?;
                             indentation.clear();
                             state = State::NodeName;
                         } else if ch.is_whitespace() {
                             indentation.push(ch);
                         } else {
-                            item.content.push_str(&indentation);
-                            item.content.push(ch);
+                            self.item.content.push_str(&indentation);
+                            self.item.content.push(ch);
                             indentation.clear();
                             state = State::NodeContent;
                         }
                     }
                     AnnotatedChar::LineEnding(le, ..) => {
-                        item.content.extend([&indentation, le.as_ref()]);
+                        self.item.content.extend([&indentation, le.as_ref()]);
                         indentation.clear();
                         state = State::NewLine;
                     }
                 },
                 State::NodeContent => match annotated_character {
-                    AnnotatedChar::Character(ch, ..) => item.content.push(ch),
+                    AnnotatedChar::Character(ch, ..) => self.item.content.push(ch),
                     AnnotatedChar::LineEnding(le, ..) => {
-                        item.content.push_str(le.as_ref());
+                        self.item.content.push_str(le.as_ref());
                         state = State::NewLine;
                     }
                 },
@@ -195,7 +198,7 @@ impl Parser {
         }
         match state {
             State::Start => return Err(DimlError::EmptyInput),
-            State::NewLine => items.push(std::mem::take(&mut item)),
+            State::NewLine => items.push(std::mem::take(&mut self.item)),
             _ => return Err(DimlError::MissingNewline(position.0, position.1 + 1)),
         }
         Ok((items, self.delimiter))
