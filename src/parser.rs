@@ -90,6 +90,8 @@ struct Parser {
     _max_nodes: usize,
     /// Maximum height of parsed tree.
     _max_height: usize,
+    /// Parser state.
+    state: State,
     /// Recognized delimiter character.
     delimiter: Option<char>,
     /// Recognized item.
@@ -102,6 +104,7 @@ impl Parser {
         Self {
             _max_nodes: max_nodes,
             _max_height: max_height,
+            state: State::Start,
             delimiter: None,
             item: Item::default(),
         }
@@ -109,39 +112,25 @@ impl Parser {
 
     /// Recognizes items in the provided input.
     fn items(&mut self, input: &str) -> Result<(Vec<Item>, Option<char>)> {
-        let mut state = State::Start;
         let mut items = vec![];
         let mut position = (0, 0);
         let mut indentation = String::new();
         for annotated_character in input.chars().annotated() {
             position = annotated_character.position();
-            match state {
-                State::Start => match annotated_character {
-                    AnnotatedChar::Character(ch, line, column) => {
-                        if Self::is_allowed_character(ch) {
-                            self.delimiter = Some(ch);
-                            (self.item.line, self.item.indent) = (line, 0);
-                            state = State::NodeName;
-                        } else {
-                            return Err(DimlError::UnexpectedCharacter(ch, line, column));
-                        }
-                    }
-                    AnnotatedChar::LineEnding(le, line, column) => {
-                        return Err(DimlError::UnexpectedCharacter(le.first(), line, column));
-                    }
-                },
+            match self.state {
+                State::Start => self.process_start(annotated_character)?,
                 State::NewLine => match annotated_character {
                     AnnotatedChar::Character(ch, line, _) => {
                         if self.delimiter == Some(ch) {
                             items.push(std::mem::take(&mut self.item));
                             (self.item.line, self.item.indent) = (line, 0);
-                            state = State::NodeName;
+                            self.state = State::NodeName;
                         } else if ch.is_whitespace() {
                             indentation.push(ch);
-                            state = State::Indentation;
+                            self.state = State::Indentation;
                         } else {
                             self.item.content.push(ch);
-                            state = State::NodeContent;
+                            self.state = State::NodeContent;
                         }
                     }
                     AnnotatedChar::LineEnding(le, ..) => {
@@ -154,14 +143,14 @@ impl Parser {
                             self.item.name.push(ch);
                         } else if ch.is_whitespace() {
                             self.item.content.push(ch);
-                            state = State::NodeContent;
+                            self.state = State::NodeContent;
                         } else {
                             return Err(DimlError::UnexpectedCharacter(ch, line, column));
                         }
                     }
                     AnnotatedChar::LineEnding(le, ..) => {
                         self.item.content.push_str(le.as_ref());
-                        state = State::NewLine;
+                        self.state = State::NewLine;
                     }
                 },
                 State::Indentation => match annotated_character {
@@ -171,37 +160,55 @@ impl Parser {
                             self.item.line = line;
                             self.item.indent = Self::validate_indentation(&indentation, line)?;
                             indentation.clear();
-                            state = State::NodeName;
+                            self.state = State::NodeName;
                         } else if ch.is_whitespace() {
                             indentation.push(ch);
                         } else {
                             self.item.content.push_str(&indentation);
                             self.item.content.push(ch);
                             indentation.clear();
-                            state = State::NodeContent;
+                            self.state = State::NodeContent;
                         }
                     }
                     AnnotatedChar::LineEnding(le, ..) => {
                         self.item.content.extend([&indentation, le.as_ref()]);
                         indentation.clear();
-                        state = State::NewLine;
+                        self.state = State::NewLine;
                     }
                 },
                 State::NodeContent => match annotated_character {
                     AnnotatedChar::Character(ch, ..) => self.item.content.push(ch),
                     AnnotatedChar::LineEnding(le, ..) => {
                         self.item.content.push_str(le.as_ref());
-                        state = State::NewLine;
+                        self.state = State::NewLine;
                     }
                 },
             }
         }
-        match state {
+        match self.state {
             State::Start => return Err(DimlError::EmptyInput),
             State::NewLine => items.push(std::mem::take(&mut self.item)),
             _ => return Err(DimlError::MissingNewline(position.0, position.1 + 1)),
         }
         Ok((items, self.delimiter))
+    }
+
+    fn process_start(&mut self, ch: AnnotatedChar) -> Result<()> {
+        match ch {
+            AnnotatedChar::Character(ch, line, column) => {
+                if Self::is_allowed_character(ch) {
+                    self.delimiter = Some(ch);
+                    (self.item.line, self.item.indent) = (line, 0);
+                    self.state = State::NodeName;
+                } else {
+                    return Err(DimlError::UnexpectedCharacter(ch, line, column));
+                }
+            }
+            AnnotatedChar::LineEnding(le, line, column) => {
+                return Err(DimlError::UnexpectedCharacter(le.first(), line, column));
+            }
+        }
+        Ok(())
     }
 
     /// Validates the indentation.
