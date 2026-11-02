@@ -51,7 +51,8 @@ pub fn parse(input: &str) -> Result<Node> {
         stack.last_mut().unwrap().0.add_child(child);
     }
     let mut stack = vec![(Node::new(0, String::new(), String::new()), 0)];
-    for strip in indented(input)? {
+    for strip in IndentedStrips::new(Strips::new(input.chars().annotated())) {
+        let strip = strip?;
         while stack.last().is_some_and(|(_, level)| *level >= strip.level) {
             append_child(&mut stack);
         }
@@ -66,45 +67,72 @@ pub fn parse(input: &str) -> Result<Node> {
     Ok(stack.pop().unwrap().0)
 }
 
-/// Prepares indented strips.
-fn indented(input: &str) -> Result<Vec<Strip>> {
-    let mut multiplier = 0;
-    let mut previous_level = 0;
-    let mut strips = Vec::new();
-    for strip in Strips::new(input.chars().annotated()) {
-        let mut strip = strip?;
-        if let Some((column, ch)) = strip.indentation.char_indices().find(|(_, ch)| *ch != ' ') {
-            return Err(DimlError::UnexpectedIndentationCharacter(
-                ch,
-                strip.line,
-                column + 1,
-            ));
+struct IndentedStrips<I>
+where
+    I: Iterator<Item = Result<Strip>>,
+{
+    iterator: I,
+    multiplier: usize,
+    level: usize,
+}
+
+impl<I> IndentedStrips<I>
+where
+    I: Iterator<Item = Result<Strip>>,
+{
+    const fn new(iterator: I) -> Self {
+        Self {
+            iterator,
+            multiplier: 0,
+            level: 0,
         }
-        let indent = strip.indentation.len();
-        if multiplier == 0 {
-            multiplier = indent;
-        } else if !indent.is_multiple_of(multiplier) {
-            return Err(DimlError::InvalidIndentation(
-                indent,
-                multiplier,
-                strip.line,
-                indent + 1,
-            ));
-        }
-        let level = indent.checked_div(multiplier).unwrap_or(0) + 1;
-        if level > previous_level + 1 {
-            return Err(DimlError::SkippedIndentation(
-                previous_level,
-                level,
-                strip.line,
-                indent + 1,
-            ));
-        }
-        previous_level = level;
-        strip.level = level;
-        strips.push(strip);
     }
-    Ok(strips)
+}
+
+impl<I> Iterator for IndentedStrips<I>
+where
+    I: Iterator<Item = Result<Strip>>,
+{
+    type Item = Result<Strip>;
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iterator.next() {
+            Some(Ok(mut strip)) => {
+                if let Some((column, ch)) =
+                    strip.indentation.char_indices().find(|(_, ch)| *ch != ' ')
+                {
+                    return Some(Err(DimlError::UnexpectedIndentationCharacter(
+                        ch,
+                        strip.line,
+                        column + 1,
+                    )));
+                }
+                let indent = strip.indentation.len();
+                if self.multiplier == 0 {
+                    self.multiplier = indent;
+                } else if !indent.is_multiple_of(self.multiplier) {
+                    return Some(Err(DimlError::InvalidIndentation(
+                        indent,
+                        self.multiplier,
+                        strip.line,
+                        indent + 1,
+                    )));
+                }
+                let level = indent.checked_div(self.multiplier).unwrap_or(0) + 1;
+                if level > self.level + 1 {
+                    return Some(Err(DimlError::SkippedIndentation(
+                        self.level,
+                        level,
+                        strip.line,
+                        indent + 1,
+                    )));
+                }
+                self.level = level;
+                strip.level = level;
+                Some(Ok(strip))
+            }
+            other => other,
+        }
+    }
 }
 
 struct Strips<I>
@@ -138,6 +166,7 @@ where
     I: Iterator<Item = AnnotatedChar>,
 {
     type Item = Result<Strip>;
+
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let anch = self.iterator.next();
