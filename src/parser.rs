@@ -34,6 +34,9 @@ struct Strip {
     name: String,
     /// Content.
     content: String,
+
+    name_start: usize,
+    name_end: usize,
 }
 
 /// Parses input.
@@ -56,6 +59,11 @@ pub fn parse(input: &str) -> Result<Node> {
         while stack.last().is_some_and(|(_, level)| *level >= strip.level) {
             append_child(&mut stack);
         }
+        println!(
+            "{} {}",
+            strip.name,
+            input[strip.name_start..strip.name_end].to_string()
+        );
         stack.push((
             Node::new(strip.line, strip.name, strip.content),
             strip.level,
@@ -141,6 +149,7 @@ where
 {
     iterator: I,
     state: State,
+    position: usize,
     delimiter: Option<char>,
     indentation: String,
     strip: Strip,
@@ -154,6 +163,7 @@ where
         Self {
             iterator,
             state: State::Start,
+            position: 0,
             delimiter: None,
             indentation: String::new(),
             strip: Strip::default(),
@@ -175,6 +185,7 @@ where
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.delimiter = Some(ch);
                             self.strip.line = line;
+                            self.strip.name_start = self.position + ch.len_utf8();
                             self.state = State::NodeName;
                         } else {
                             return Some(Err(DimlError::UnexpectedCharacter(ch, line, col)));
@@ -190,6 +201,7 @@ where
                         if self.delimiter == Some(ch) {
                             let strip = std::mem::take(&mut self.strip);
                             self.strip.line = line;
+                            self.strip.name_start = self.position + ch.len_utf8();
                             self.state = State::NodeName;
                             return Some(Ok(strip));
                         } else if ch.is_whitespace() {
@@ -213,6 +225,7 @@ where
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.strip.name.push(ch);
                         } else if ch.is_whitespace() {
+                            self.strip.name_end = self.position;
                             self.strip.content.push(ch);
                             self.state = State::NodeContent;
                         } else {
@@ -231,6 +244,7 @@ where
                             let strip = std::mem::take(&mut self.strip);
                             self.strip.line = line;
                             self.strip.indentation = std::mem::take(&mut self.indentation);
+                            self.strip.name_start = self.position + ch.len_utf8();
                             self.state = State::NodeName;
                             return Some(Ok(strip));
                         } else if ch.is_whitespace() {
@@ -260,6 +274,11 @@ where
                     None => return Some(Err(DimlError::MissingNewline)),
                 },
                 State::Finished => return None,
+            }
+            match anch {
+                Some(AnnotatedChar::Character(ch, ..)) => self.position += ch.len_utf8(),
+                Some(AnnotatedChar::LineEnding(le, ..)) => self.position += le.as_ref().len(),
+                _ => {}
             }
         }
     }
