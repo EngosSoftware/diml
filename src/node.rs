@@ -1,7 +1,7 @@
 //! # Node implementation
 
 /// Tree node.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct Node {
     /// Line number where the node starts.
     line: usize,
