@@ -21,11 +21,11 @@ struct Segment {
 struct Strip {
     /// Line number where the strip starts.
     line: usize,
-    /// Number of whitespaces in the indentation.
-    indent: usize,
-    /// Node name.
+    /// Indentation.
+    indentation: String,
+    /// Name.
     name: String,
-    /// Node content.
+    /// Content.
     content: String,
 }
 
@@ -34,7 +34,7 @@ enum State {
     /// At the beginning of the input.
     Start,
     /// At the beginning of the line.
-    NewLine,
+    LineStart,
     /// Inside the indentation.
     Indentation,
     /// Inside the node name.
@@ -58,11 +58,17 @@ pub fn parse(input: &str) -> Result<Node> {
         stack.last_mut().unwrap().0.add_child(child);
     }
     let mut stack = vec![(Node::new(0, String::new(), String::new()), 0)];
-    for s in segments(input)? {
-        while stack.last().is_some_and(|(_, l)| *l >= s.level) {
+    for segment in segments(input)? {
+        while stack
+            .last()
+            .is_some_and(|(_, level)| *level >= segment.level)
+        {
             append_child(&mut stack);
         }
-        stack.push((Node::new(s.line, s.name, s.content), s.level));
+        stack.push((
+            Node::new(segment.line, segment.name, segment.content),
+            segment.level,
+        ));
     }
     while stack.len() > 1 {
         append_child(&mut stack);
@@ -70,30 +76,38 @@ pub fn parse(input: &str) -> Result<Node> {
     Ok(stack.pop().unwrap().0)
 }
 
-/// Prepares segments.
+/// Prepares text segments.
 fn segments(input: &str) -> Result<Vec<Segment>> {
     let mut segments = vec![];
     let mut multiplier = 0;
     let mut previous_level = 0;
     for strip in strips(input)? {
-        if multiplier == 0 && strip.indent > 0 {
-            multiplier = strip.indent;
-        }
-        if multiplier > 0 && !strip.indent.is_multiple_of(multiplier) {
-            return Err(DimlError::InvalidIndentation(
-                strip.indent,
-                multiplier,
+        if let Some((column, ch)) = strip.indentation.char_indices().find(|(_, ch)| *ch != ' ') {
+            return Err(DimlError::UnexpectedIndentationCharacter(
+                ch,
                 strip.line,
-                strip.indent + 1,
+                column + 1,
             ));
         }
-        let level = strip.indent.checked_div(multiplier).unwrap_or(0) + 1;
+        let indent = strip.indentation.len();
+        if multiplier == 0 && indent > 0 {
+            multiplier = indent;
+        }
+        if multiplier > 0 && !indent.is_multiple_of(multiplier) {
+            return Err(DimlError::InvalidIndentation(
+                indent,
+                multiplier,
+                strip.line,
+                indent + 1,
+            ));
+        }
+        let level = indent.checked_div(multiplier).unwrap_or(0) + 1;
         if level > previous_level + 1 {
             return Err(DimlError::SkippedIndentation(
                 previous_level,
                 level,
                 strip.line,
-                strip.indent + 1,
+                indent + 1,
             ));
         }
         previous_level = level;
@@ -107,7 +121,7 @@ fn segments(input: &str) -> Result<Vec<Segment>> {
     Ok(segments)
 }
 
-/// Recognizes strips.
+/// Recognizes text strips.
 fn strips(input: &str) -> Result<Vec<Strip>> {
     let mut state = State::Start;
     let mut items = vec![];
@@ -122,7 +136,7 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
                 AnnotatedChar::Character(ch, line, column) => {
                     if is_allowed_character(ch) {
                         delimiter = Some(ch);
-                        (item.line, item.indent) = (line, 0);
+                        item.line = line;
                         state = State::NodeName;
                     } else {
                         return Err(DimlError::UnexpectedCharacter(ch, line, column));
@@ -132,11 +146,11 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
                     return Err(DimlError::UnexpectedCharacter(le.first(), line, column));
                 }
             },
-            State::NewLine => match anch {
+            State::LineStart => match anch {
                 AnnotatedChar::Character(ch, line, _) => {
                     if delimiter == Some(ch) {
                         items.push(std::mem::take(&mut item));
-                        (item.line, item.indent) = (line, 0);
+                        item.line = line;
                         state = State::NodeName;
                     } else if ch.is_whitespace() {
                         indentation.push(ch);
@@ -163,7 +177,7 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
                 }
                 AnnotatedChar::LineEnding(le, ..) => {
                     item.content.push_str(le.as_ref());
-                    state = State::NewLine;
+                    state = State::LineStart;
                 }
             },
             State::Indentation => match anch {
@@ -171,8 +185,7 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
                     if delimiter == Some(ch) {
                         items.push(std::mem::take(&mut item));
                         item.line = line;
-                        item.indent = validate_indentation(&indentation, line)?;
-                        indentation.clear();
+                        item.indentation = std::mem::take(&mut indentation);
                         state = State::NodeName;
                     } else if ch.is_whitespace() {
                         indentation.push(ch);
@@ -186,37 +199,24 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
                 AnnotatedChar::LineEnding(le, ..) => {
                     item.content.extend([&indentation, le.as_ref()]);
                     indentation.clear();
-                    state = State::NewLine;
+                    state = State::LineStart;
                 }
             },
             State::NodeContent => match anch {
                 AnnotatedChar::Character(ch, ..) => item.content.push(ch),
                 AnnotatedChar::LineEnding(le, ..) => {
                     item.content.push_str(le.as_ref());
-                    state = State::NewLine;
+                    state = State::LineStart;
                 }
             },
         }
     }
     match state {
         State::Start => return Err(DimlError::EmptyInput),
-        State::NewLine => items.push(std::mem::take(&mut item)),
+        State::LineStart => items.push(std::mem::take(&mut item)),
         _ => return Err(DimlError::MissingNewline(position.0, position.1 + 1)),
     }
     Ok(items)
-}
-
-/// Validates indentation.
-fn validate_indentation(indentation: &str, line: usize) -> Result<usize> {
-    if let Some((column, ch)) = indentation.char_indices().find(|(_, ch)| *ch != ' ') {
-        Err(DimlError::UnexpectedIndentationCharacter(
-            ch,
-            line,
-            column + 1,
-        ))
-    } else {
-        Ok(indentation.len())
-    }
 }
 
 /// Validates a delimiter or node name character.
