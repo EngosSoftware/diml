@@ -55,11 +55,9 @@ struct Strip {
     /// Indentation level.
     level: usize,
     /// Name.
-    name: String,
+    name: Span,
     /// Content.
     content: String,
-
-    name_span: Span,
 }
 
 /// Parses input.
@@ -82,9 +80,9 @@ pub fn parse(input: &str) -> Result<Node> {
         while stack.last().is_some_and(|(_, level)| *level >= strip.level) {
             append_child(&mut stack);
         }
-        assert_eq!(strip.name, strip.name_span.text(input));
+        //assert_eq!(strip.name, strip.name_span.text(input));
         stack.push((
-            Node::new(strip.line, strip.name, strip.content),
+            Node::new(strip.line, strip.name.text(input), strip.content),
             strip.level,
         ));
     }
@@ -256,8 +254,7 @@ impl Iterator for Strips<'_> {
                             self.strip.content.push_str(le);
                             self.state = State::LineStart;
                         } else if !ch.is_control() && !ch.is_whitespace() {
-                            self.strip.name_span.update(offset, ch);
-                            self.strip.name.push(ch);
+                            self.strip.name.update(offset, ch);
                         } else if ch.is_whitespace() {
                             self.strip.content.push(ch);
                             self.state = State::NodeContent;
