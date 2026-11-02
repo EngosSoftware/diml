@@ -10,16 +10,18 @@ fn _0001() {
 #[test]
 fn _0002() {
     // Input beginning with a newline is invalid.
-    let inputs = ["\n", "\r\n", "\r"];
-    for input in inputs {
-        assert_eq!(
-            format!(
-                "unexpected character '{}' at line 1, column 1",
-                input[..1].escape_debug()
-            ),
-            parse(input).unwrap_err().to_string()
-        );
-    }
+    assert_eq!(
+        "unexpected character '\\n' at line 1, column 1",
+        parse("\n").unwrap_err().to_string()
+    );
+    assert_eq!(
+        "unexpected character '\\r' at line 1, column 1",
+        parse("\r\n").unwrap_err().to_string()
+    );
+    assert_eq!(
+        "unexpected character '\\r' at line 1, column 1",
+        parse("\r").unwrap_err().to_string()
+    );
 }
 
 #[test]
