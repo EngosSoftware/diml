@@ -4,7 +4,7 @@ use crate::errors::Result;
 use crate::{DimlError, Node};
 use anch::{Annotated, AnnotatedChar};
 
-/// Recognized text segment.
+/// Recognized segment.
 struct Segment {
     /// Line number where the segment starts.
     line: usize,
@@ -16,7 +16,7 @@ struct Segment {
     content: String,
 }
 
-/// Recognized text strip.
+/// Recognized strip.
 #[derive(Default)]
 struct Strip {
     /// Line number where the strip starts.
@@ -35,7 +35,7 @@ enum State {
     Start,
     /// At the beginning of the line.
     NewLine,
-    /// Inside the indentation at the beginning of the line.
+    /// Inside the indentation.
     Indentation,
     /// Inside the node name.
     NodeName,
