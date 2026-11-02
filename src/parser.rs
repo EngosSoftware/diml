@@ -5,10 +5,8 @@ use crate::{DimlError, Node};
 use anch::{Annotated, AnnotatedChar};
 
 /// Parser state.
-#[derive(Default)]
 enum State {
     /// At the beginning of the input.
-    #[default]
     Start,
     /// At the beginning of the line.
     LineStart,
@@ -69,7 +67,7 @@ pub fn parse(input: &str) -> Result<Node> {
 fn indented(input: &str) -> Result<Vec<Strip>> {
     let mut multiplier = 0;
     let mut previous_level = 0;
-    let mut strips = Strips::default().strips(input)?;
+    let mut strips = Strips::new(input).strips()?;
     for strip in &mut strips {
         if let Some((column, ch)) = strip.indentation.char_indices().find(|(_, ch)| *ch != ' ') {
             return Err(DimlError::UnexpectedIndentationCharacter(
@@ -104,20 +102,31 @@ fn indented(input: &str) -> Result<Vec<Strip>> {
     Ok(strips)
 }
 
-#[derive(Default)]
-struct Strips {
+struct Strips<'a> {
+    input: &'a str,
     state: State,
     delimiter: Option<char>,
     position: (usize, usize),
     indentation: String,
     strip: Strip,
-    strips: Vec<Strip>,
+    s_trips: Vec<Strip>,
 }
 
-impl Strips {
-    /// Recognizes strips.
-    fn strips(mut self, input: &str) -> Result<Vec<Strip>> {
-        for anch in input.chars().annotated() {
+impl<'a> Strips<'a> {
+    fn new(input: &'a str) -> Self {
+        Self {
+            input,
+            state: State::Start,
+            delimiter: None,
+            position: (0, 0),
+            indentation: String::new(),
+            strip: Strip::default(),
+            s_trips: vec![],
+        }
+    }
+
+    fn strips(mut self) -> Result<Vec<Strip>> {
+        for anch in self.input.chars().annotated() {
             self.position = anch.position();
             match self.state {
                 State::Start => match anch {
@@ -137,7 +146,7 @@ impl Strips {
                 State::LineStart => match anch {
                     AnnotatedChar::Character(ch, line, _) => {
                         if self.delimiter == Some(ch) {
-                            self.strips.push(std::mem::take(&mut self.strip));
+                            self.s_trips.push(std::mem::take(&mut self.strip));
                             self.strip.line = line;
                             self.state = State::NodeName;
                         } else if ch.is_whitespace() {
@@ -171,7 +180,7 @@ impl Strips {
                 State::Indentation => match anch {
                     AnnotatedChar::Character(ch, line, _) => {
                         if self.delimiter == Some(ch) {
-                            self.strips.push(std::mem::take(&mut self.strip));
+                            self.s_trips.push(std::mem::take(&mut self.strip));
                             self.strip.line = line;
                             self.strip.indentation = std::mem::take(&mut self.indentation);
                             self.state = State::NodeName;
@@ -201,7 +210,7 @@ impl Strips {
         }
         match self.state {
             State::Start => return Err(DimlError::EmptyInput),
-            State::LineStart => self.strips.push(std::mem::take(&mut self.strip)),
+            State::LineStart => self.s_trips.push(std::mem::take(&mut self.strip)),
             _ => {
                 return Err(DimlError::MissingNewline(
                     self.position.0,
@@ -209,6 +218,6 @@ impl Strips {
                 ));
             }
         }
-        Ok(self.strips)
+        Ok(self.s_trips)
     }
 }
