@@ -4,26 +4,6 @@ use crate::errors::Result;
 use crate::{DimlError, Node};
 use anch::{Annotated, AnnotatedChar};
 
-/// Parses the input text.
-///
-/// # Errors
-///
-/// Will return `Err` when parsing the input text fails.
-pub fn parse(input: &str) -> Result<Node> {
-    let mut stack = vec![];
-    for mut node in nodes(input)?.into_iter().rev() {
-        while let Some(child) = stack.pop_if(|last: &mut Node| last.level() > node.level()) {
-            node.add_child(child);
-        }
-        stack.push(node);
-    }
-    let mut root = Node::root();
-    while let Some(node) = stack.pop() {
-        root.add_child(node);
-    }
-    Ok(root)
-}
-
 /// Recognized strip of text.
 #[derive(Default)]
 struct Strip {
@@ -49,6 +29,26 @@ enum State {
     NodeName,
     /// Inside the node content.
     NodeContent,
+}
+
+/// Parses the input text.
+///
+/// # Errors
+///
+/// Will return `Err` when parsing the input text fails.
+pub fn parse(input: &str) -> Result<Node> {
+    let mut stack = vec![];
+    for mut node in nodes(input)?.into_iter().rev() {
+        while let Some(child) = stack.pop_if(|last: &mut Node| last.level() > node.level()) {
+            node.add_child(child);
+        }
+        stack.push(node);
+    }
+    let mut root = Node::root();
+    while let Some(node) = stack.pop() {
+        root.add_child(node);
+    }
+    Ok(root)
 }
 
 /// Prepares nodes from items.
