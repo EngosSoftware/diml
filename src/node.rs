@@ -3,10 +3,8 @@
 /// Tree node.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Node {
-    /// Indentation level of the node.
-    /// Root (virtual) node has level `0`.
-    /// Top level nodes in parsed document have level `1`.
-    level: usize,
+    /// Line where the node starts in input.
+    line: usize,
     /// The name of the node.
     /// Node name as defined in parsed document without delimiter.
     /// Root (virtual) node has an empty name.
@@ -21,20 +19,10 @@ pub struct Node {
 }
 
 impl Node {
-    /// Creates a root node.
-    pub(crate) const fn root() -> Self {
-        Self {
-            level: 0,
-            name: String::new(),
-            content: String::new(),
-            children: vec![],
-        }
-    }
-
     /// Creates a new node.
-    pub(crate) const fn new(level: usize, name: String, content: String) -> Self {
+    pub(crate) const fn new(line: usize, name: String, content: String) -> Self {
         Self {
-            level,
+            line,
             name,
             content,
             children: vec![],
@@ -46,10 +34,10 @@ impl Node {
         self.children.push(node);
     }
 
-    /// Returns the indentation level of the node.
+    /// Returns the line where node starts in input.
     #[must_use]
-    pub const fn level(&self) -> usize {
-        self.level
+    pub const fn line(&self) -> usize {
+        self.line
     }
 
     /// Returns the node name.

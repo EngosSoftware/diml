@@ -2,32 +2,34 @@ use diml::parse;
 
 #[test]
 fn _0001() {
-    let root = parse(".\n").unwrap();
-    assert_eq!(1, root.children().len());
-    assert_eq!(0, root.level());
-    assert_eq!("", root.name());
-    assert_eq!("", root.content());
-    assert_eq!("", root.text());
+    let doc = parse(".\n").unwrap();
+    assert_eq!(0, doc.line());
+    assert_eq!("", doc.name());
+    assert_eq!("", doc.content());
+    assert_eq!("", doc.text());
+    assert_eq!(1, doc.children().len());
 }
 
 #[test]
 fn _0002() {
-    let root = parse("-\n").unwrap();
-    assert_eq!(1, root.children().len());
-    let node = root.children().next().unwrap();
-    assert_eq!(1, node.level());
+    let doc = parse("-\n").unwrap();
+    assert_eq!(0, doc.line());
+    assert_eq!(1, doc.children().len());
+    let node = doc.children().next().unwrap();
+    assert_eq!(1, node.line());
     assert_eq!("", node.name());
     assert_eq!("\n", node.content());
     assert_eq!("", node.text());
+    assert_eq!(0, node.children().len());
 }
 
 #[test]
 fn _0003() {
     let inputs = ["-\n", "-\r", "-\r\n", "- \n"];
     for input in inputs {
-        let root = parse(input).unwrap();
-        assert_eq!(1, root.children().count());
-        let node = root.children().next().unwrap();
+        let doc = parse(input).unwrap();
+        assert_eq!(1, doc.children().count());
+        let node = doc.children().next().unwrap();
         assert_eq!("", node.name());
         assert_eq!(&input[1..], node.content());
         assert_eq!("", node.text());
@@ -37,9 +39,9 @@ fn _0003() {
 #[test]
 fn _0004() {
     let input = "- node content\n";
-    let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    let node = root.children().next().unwrap();
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
     assert_eq!("", node.name());
     assert_eq!(" node content\n", node.content());
     assert_eq!("node content", node.text());
@@ -48,9 +50,9 @@ fn _0004() {
 #[test]
 fn _0005() {
     let input = "ab\n";
-    let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    let node = root.children().next().unwrap();
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
     assert_eq!("b", node.name());
     assert_eq!("\n", node.content());
     assert_eq!("", node.text());
@@ -59,9 +61,9 @@ fn _0005() {
 #[test]
 fn _0006() {
     let input = "aa b\n";
-    let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    let node = root.children().next().unwrap();
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
     assert_eq!("a", node.name());
     assert_eq!(" b\n", node.content());
     assert_eq!("b", node.text());
@@ -70,9 +72,9 @@ fn _0006() {
 #[test]
 fn _0007() {
     let input = "aa\nb\n";
-    let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    let node = root.children().next().unwrap();
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
     assert_eq!("a", node.name());
     assert_eq!("\nb\n", node.content());
     assert_eq!("b", node.text());
@@ -81,9 +83,9 @@ fn _0007() {
 #[test]
 fn _0008() {
     let input = "aa\rb\n";
-    let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    let node = root.children().next().unwrap();
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
     assert_eq!("a", node.name());
     assert_eq!("\rb\n", node.content());
     assert_eq!("b", node.text());
@@ -92,9 +94,9 @@ fn _0008() {
 #[test]
 fn _0009() {
     let input = "aa\r\nb\n";
-    let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    let node = root.children().next().unwrap();
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
     assert_eq!("a", node.name());
     assert_eq!("\r\nb\n", node.content());
     assert_eq!("b", node.text());
@@ -103,9 +105,9 @@ fn _0009() {
 #[test]
 fn _0010() {
     let input = "aa\tb\n";
-    let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    let node = root.children().next().unwrap();
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
     assert_eq!("a", node.name());
     assert_eq!("\tb\n", node.content());
     assert_eq!("b", node.text());
@@ -114,9 +116,9 @@ fn _0010() {
 #[test]
 fn _0011() {
     let input = ".A\n";
-    let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    let node = root.children().next().unwrap();
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
     assert_eq!("A", node.name());
     assert_eq!("\n", node.content());
     assert_eq!("", node.text());
@@ -125,9 +127,9 @@ fn _0011() {
 #[test]
 fn _0012() {
     let input = "😀_this_is-some_funny-name\n";
-    let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    let node = root.children().next().unwrap();
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
     assert_eq!("_this_is-some_funny-name", node.name());
     assert_eq!("\n", node.content());
     assert_eq!("", node.text());
@@ -136,9 +138,9 @@ fn _0012() {
 #[test]
 fn _0013() {
     let input = ">z\n";
-    let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    let node = root.children().next().unwrap();
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
     assert_eq!("z", node.name());
     assert_eq!("\n", node.content());
     assert_eq!("", node.text());
@@ -147,9 +149,9 @@ fn _0013() {
 #[test]
 fn _0014() {
     let input = ".A1\n";
-    let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    let node = root.children().next().unwrap();
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
     assert_eq!("A1", node.name());
     assert_eq!("\n", node.content());
     assert_eq!("", node.text());
@@ -158,8 +160,8 @@ fn _0014() {
 #[test]
 fn _0015() {
     let input = ".A\n.k\n";
-    let root = parse(input).unwrap();
-    let mut children = root.children();
+    let doc = parse(input).unwrap();
+    let mut children = doc.children();
     let first = children.next().unwrap();
     assert_eq!("A", first.name());
     assert_eq!("\n", first.content());
@@ -174,8 +176,8 @@ fn _0015() {
 #[test]
 fn _0016() {
     let input = "$x\n$_\n";
-    let root = parse(input).unwrap();
-    let mut children = root.children();
+    let doc = parse(input).unwrap();
+    let mut children = doc.children();
     let first = children.next().unwrap();
     assert_eq!("x", first.name());
     assert_eq!("\n", first.content());
@@ -190,8 +192,8 @@ fn _0016() {
 #[test]
 fn _0017() {
     let input = "*n\n    *_\n";
-    let root = parse(input).unwrap();
-    let mut children = root.children();
+    let doc = parse(input).unwrap();
+    let mut children = doc.children();
     let first = children.next().unwrap();
     assert_eq!("n", first.name());
     assert_eq!("\n", first.content());
@@ -206,8 +208,8 @@ fn _0017() {
 #[test]
 fn _0018() {
     let input = ".A\n$B\n";
-    let root = parse(input).unwrap();
-    let mut children = root.children();
+    let doc = parse(input).unwrap();
+    let mut children = doc.children();
     let first = children.next().unwrap();
     assert_eq!("A", first.name());
     assert_eq!("\n$B\n", first.content());
@@ -246,8 +248,8 @@ fn _0020() {
   
   .C c
 ";
-    let root = parse(input.trim_start()).unwrap();
-    let node_a = root.children().next().unwrap();
+    let doc = parse(input.trim_start()).unwrap();
+    let node_a = doc.children().next().unwrap();
     assert_eq!("A", node_a.name());
     assert_eq!("a", node_a.text());
     assert_eq!(" a\n", node_a.content());
@@ -266,9 +268,9 @@ fn _0020() {
 fn _0021() {
     // Control characters are allowed in the content.
     let input = ".A ab\u{7f}cd\n";
-    let root = parse(input).unwrap();
-    assert_eq!(1, root.children().count());
-    let node = root.children().next().unwrap();
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
     assert_eq!("A", node.name());
     assert_eq!(" ab\u{7f}cd\n", node.content());
     assert_eq!("ab\u{7f}cd", node.text());

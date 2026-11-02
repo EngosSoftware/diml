@@ -4,7 +4,19 @@ use crate::errors::Result;
 use crate::{DimlError, Node};
 use anch::{Annotated, AnnotatedChar};
 
-/// Recognized strip of text.
+/// Recognized text segment.
+struct Segment {
+    /// Line number where the segment starts.
+    line: usize,
+    /// Indentation level.
+    level: usize,
+    /// Node name.
+    name: String,
+    /// Node content.
+    content: String,
+}
+
+/// Recognized text strip.
 #[derive(Default)]
 struct Strip {
     /// Line number where the strip starts.
@@ -31,61 +43,71 @@ enum State {
     NodeContent,
 }
 
-/// Parses the input text.
+/// Parses input.
 ///
 /// # Errors
 ///
-/// Will return `Err` when parsing the input text fails.
+/// Returns an error when parsing invalid input.
+///
+/// # Panics
+///
+/// Unwraps are safe, no panics.
 pub fn parse(input: &str) -> Result<Node> {
-    let mut stack = vec![];
-    for mut node in nodes(input)?.into_iter().rev() {
-        while let Some(child) = stack.pop_if(|last: &mut Node| last.level() > node.level()) {
-            node.add_child(child);
+    fn append_child(stack: &mut Vec<(Node, usize)>) {
+        let (child, _) = stack.pop().unwrap();
+        stack.last_mut().unwrap().0.add_child(child);
+    }
+    let mut stack = vec![(Node::new(0, String::new(), String::new()), 0)];
+    for s in segments(input)? {
+        while stack.last().is_some_and(|(_, l)| *l >= s.level) {
+            append_child(&mut stack);
         }
-        stack.push(node);
+        stack.push((Node::new(s.line, s.name, s.content), s.level));
     }
-    let mut root = Node::root();
-    while let Some(node) = stack.pop() {
-        root.add_child(node);
+    while stack.len() > 1 {
+        append_child(&mut stack);
     }
-    Ok(root)
+    Ok(stack.pop().unwrap().0)
 }
 
-/// Prepares nodes from items.
-fn nodes(input: &str) -> Result<Vec<Node>> {
-    let mut nodes = vec![];
+/// Prepares segments.
+fn segments(input: &str) -> Result<Vec<Segment>> {
+    let mut segments = vec![];
     let mut multiplier = 0;
-    let mut last_level = 0;
-    let items = strips(input)?;
-    for item in items {
-        if multiplier == 0 && item.indent > 0 {
-            multiplier = item.indent;
+    let mut previous_level = 0;
+    for strip in strips(input)? {
+        if multiplier == 0 && strip.indent > 0 {
+            multiplier = strip.indent;
         }
-        if multiplier > 0 && !item.indent.is_multiple_of(multiplier) {
+        if multiplier > 0 && !strip.indent.is_multiple_of(multiplier) {
             return Err(DimlError::InvalidIndentation(
-                item.indent,
+                strip.indent,
                 multiplier,
-                item.line,
-                item.indent + 1,
+                strip.line,
+                strip.indent + 1,
             ));
         }
-        let level = item.indent.checked_div(multiplier).unwrap_or(0) + 1;
-        if level > last_level + 1 {
+        let level = strip.indent.checked_div(multiplier).unwrap_or(0) + 1;
+        if level > previous_level + 1 {
             return Err(DimlError::SkippedIndentation(
-                last_level,
+                previous_level,
                 level,
-                item.line,
-                item.indent + 1,
+                strip.line,
+                strip.indent + 1,
             ));
         }
-        last_level = level;
-        let node = Node::new(level, item.name, item.content);
-        nodes.push(node);
+        previous_level = level;
+        segments.push(Segment {
+            line: strip.line,
+            level,
+            name: strip.name,
+            content: strip.content,
+        });
     }
-    Ok(nodes)
+    Ok(segments)
 }
 
-/// Recognizes strips of text.
+/// Recognizes strips.
 fn strips(input: &str) -> Result<Vec<Strip>> {
     let mut state = State::Start;
     let mut items = vec![];
@@ -184,8 +206,7 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
     Ok(items)
 }
 
-/// Validates the indentation.
-/// Valid indentation must contain only spaces.
+/// Validates indentation.
 fn validate_indentation(indentation: &str, line: usize) -> Result<usize> {
     if let Some((column, ch)) = indentation.char_indices().find(|(_, ch)| *ch != ' ') {
         Err(DimlError::UnexpectedIndentationCharacter(
@@ -198,8 +219,7 @@ fn validate_indentation(indentation: &str, line: usize) -> Result<usize> {
     }
 }
 
-/// Returns `true` when the specified character
-/// is a valid character for delimiter or a node name.
+/// Validates a delimiter or node name character.
 fn is_allowed_character(ch: char) -> bool {
     !ch.is_control() && !ch.is_whitespace()
 }
