@@ -59,8 +59,7 @@ pub fn parse(input: &str) -> Result<Node> {
         while stack.last().is_some_and(|(_, level)| *level >= strip.level) {
             append_child(&mut stack);
         }
-        println!(
-            "{} {}",
+        assert_eq!(
             strip.name,
             input[strip.name_start..strip.name_end].to_string()
         );
