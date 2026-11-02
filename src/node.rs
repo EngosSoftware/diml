@@ -1,20 +1,15 @@
-//! # Tree node implementation
+//! # Node implementation
 
 /// Tree node.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Node {
-    /// Line where the node starts in input.
+    /// Line number where the node starts.
     line: usize,
-    /// The name of the node.
-    /// Node name as defined in parsed document without delimiter.
-    /// Root (virtual) node has an empty name.
+    /// Node name.
     name: String,
-    /// The content of the node.
-    /// Node content as defined in parsed document.
-    /// Root (virtual) node has an empty content.
+    /// Node content.
     content: String,
     /// Child nodes.
-    /// A list of all child nodes of this node.
     children: Vec<Self>,
 }
 
@@ -29,12 +24,7 @@ impl Node {
         }
     }
 
-    /// Adds a child node at the end of the children list.
-    pub(crate) fn add_child(&mut self, node: Self) {
-        self.children.push(node);
-    }
-
-    /// Returns the line where node starts in input.
+    /// Returns the line number where the node starts in input.
     #[must_use]
     pub const fn line(&self) -> usize {
         self.line
@@ -52,10 +42,14 @@ impl Node {
         &self.content
     }
 
-    /// Returns the node text (trimmed content).
-    #[must_use]
-    pub fn text(&self) -> &str {
-        self.content.trim()
+    /// Adds a child node at the end of the children list.
+    pub(crate) fn add_child(&mut self, node: Self) {
+        self.children.push(node);
+    }
+
+    /// Returns an iterator over all child nodes.
+    pub fn children(&self) -> std::slice::Iter<'_, Self> {
+        self.children.iter()
     }
 
     /// Returns the first child node having the specified name.
@@ -69,11 +63,6 @@ impl Node {
             .iter()
             .rev()
             .find(|node| node.name == name.as_ref())
-    }
-
-    /// Returns an iterator over all child nodes.
-    pub fn children(&self) -> std::slice::Iter<'_, Self> {
-        self.children.iter()
     }
 
     /// Returns an iterator over child nodes that have the specified name.

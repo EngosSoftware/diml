@@ -40,7 +40,6 @@ fn _0001() {
     assert_eq!(6, node.children().len());
     assert_eq!("A", node.name());
     assert_eq!("\n", node.content());
-    assert_eq!("", node.text());
     assert_eq!(vec!["B", "B"], with_name(node, "B"));
     assert_eq!(vec!["C"], with_name(node, "C"));
     assert_eq!(vec!["D", "D", "D"], with_name(node, "D"));

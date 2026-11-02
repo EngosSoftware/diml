@@ -19,7 +19,10 @@ fn _0001() {
         ],
         names
     );
-    let values = root.children().map(Node::text).collect::<Vec<&str>>();
+    let values = root
+        .children()
+        .map(|node| node.content().trim())
+        .collect::<Vec<&str>>();
     assert_eq!(
         vec![
             "A sample DIML file",
@@ -42,7 +45,7 @@ fn _0001() {
         .first_with_name("domains")
         .unwrap()
         .children()
-        .map(Node::text)
+        .map(|node| node.content().trim())
         .collect::<Vec<&str>>();
     assert_eq!(
         vec![
@@ -61,6 +64,7 @@ fn _0001() {
             .unwrap()
             .first_with_name("type")
             .unwrap()
-            .text()
+            .content()
+            .trim()
     );
 }
