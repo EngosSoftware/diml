@@ -206,7 +206,7 @@ fn _0019() {
 }
 
 #[test]
-fn _0021() {
+fn _0020() {
     // No newline after the content of the last node.
     let input = ".A\n  .B content";
     assert_eq!(
@@ -216,7 +216,7 @@ fn _0021() {
 }
 
 #[test]
-fn _0022() {
+fn _0021() {
     // No newline after the last node, with CRLF line endings.
     let input = ".A\r\n.B";
     assert_eq!(
@@ -226,7 +226,7 @@ fn _0022() {
 }
 
 #[test]
-fn _0023() {
+fn _0022() {
     // No control character is allowed inside a node name.
     let input = ".A\u{7f}BC abc\n";
     assert_eq!(
