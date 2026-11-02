@@ -57,7 +57,7 @@ fn _0006() {
     // Delimiter character without a newline at the end of line is invalid.
     let input = ".";
     assert_eq!(
-        "missing newline at the end of input at line 1, column 2",
+        "missing newline at the end of input",
         parse(input).unwrap_err().to_string()
     );
 }
@@ -67,7 +67,7 @@ fn _0007() {
     // No newline after empty name at the end of the line is invalid.
     let input = ". ";
     assert_eq!(
-        "missing newline at the end of input at line 1, column 3",
+        "missing newline at the end of input",
         parse(input).unwrap_err().to_string()
     );
 }
@@ -90,7 +90,7 @@ fn _0009() {
     // Input with node name not followed by a whitespace, newline or both is invalid.
     let input = ".A";
     assert_eq!(
-        "missing newline at the end of input at line 1, column 3",
+        "missing newline at the end of input",
         parse(input).unwrap_err().to_string()
     );
 }
@@ -100,7 +100,7 @@ fn _0010() {
     // Node name is not followed by a whitespace and newline.
     let input = ".A ";
     assert_eq!(
-        "missing newline at the end of input at line 1, column 4",
+        "missing newline at the end of input",
         parse(input).unwrap_err().to_string()
     );
 }
@@ -132,7 +132,7 @@ fn _0013() {
     .NAMESPACE https://decision-toolkit.org/2_0001/
   ";
     assert_eq!(
-        "missing newline at the end of input at line 3, column 3",
+        "missing newline at the end of input",
         parse(input).unwrap_err().to_string()
     );
 }
@@ -210,7 +210,7 @@ fn _0021() {
     // No newline after the content of the last node.
     let input = ".A\n  .B content";
     assert_eq!(
-        "missing newline at the end of input at line 2, column 13",
+        "missing newline at the end of input",
         parse(input).unwrap_err().to_string()
     );
 }
@@ -220,7 +220,7 @@ fn _0022() {
     // No newline after the last node, with CRLF line endings.
     let input = ".A\r\n.B";
     assert_eq!(
-        "missing newline at the end of input at line 2, column 3",
+        "missing newline at the end of input",
         parse(input).unwrap_err().to_string()
     );
 }

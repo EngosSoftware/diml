@@ -110,7 +110,6 @@ where
 {
     state: State,
     delimiter: Option<char>,
-    position: (usize, usize),
     indentation: String,
     strip: Strip,
     iterator: I,
@@ -125,7 +124,6 @@ where
         Self {
             state: State::Start,
             delimiter: None,
-            position: (0, 0),
             indentation: String::new(),
             strip: Strip::default(),
             iterator,
@@ -133,17 +131,12 @@ where
         }
     }
 
-    #[expect(clippy::too_many_lines)]
     fn next(&mut self) -> Result<Option<Strip>> {
-        if self.finished {
-            return Ok(None);
-        }
-        loop {
+        while !self.finished {
             let anch = self.iterator.next();
             match self.state {
                 State::Start => match anch {
                     Some(AnnotatedChar::Character(ch, line, column)) => {
-                        self.position = (line, column);
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.delimiter = Some(ch);
                             self.strip.line = line;
@@ -158,8 +151,7 @@ where
                     None => return Err(DimlError::EmptyInput),
                 },
                 State::LineStart => match anch {
-                    Some(AnnotatedChar::Character(ch, line, column)) => {
-                        self.position = (line, column);
+                    Some(AnnotatedChar::Character(ch, line, ..)) => {
                         if self.delimiter == Some(ch) {
                             let a = std::mem::take(&mut self.strip);
                             self.strip.line = line;
@@ -173,8 +165,7 @@ where
                             self.state = State::NodeContent;
                         }
                     }
-                    Some(AnnotatedChar::LineEnding(le, line, column)) => {
-                        self.position = (line, column);
+                    Some(AnnotatedChar::LineEnding(le, ..)) => {
                         self.strip.content.push_str(le.as_ref());
                     }
                     None => {
@@ -184,7 +175,6 @@ where
                 },
                 State::NodeName => match anch {
                     Some(AnnotatedChar::Character(ch, line, column)) => {
-                        self.position = (line, column);
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.strip.name.push(ch);
                         } else if ch.is_whitespace() {
@@ -194,21 +184,14 @@ where
                             return Err(DimlError::UnexpectedCharacter(ch, line, column));
                         }
                     }
-                    Some(AnnotatedChar::LineEnding(le, line, column)) => {
-                        self.position = (line, column);
+                    Some(AnnotatedChar::LineEnding(le, ..)) => {
                         self.strip.content.push_str(le.as_ref());
                         self.state = State::LineStart;
                     }
-                    None => {
-                        return Err(DimlError::MissingNewline(
-                            self.position.0,
-                            self.position.1 + 1,
-                        ));
-                    }
+                    None => return Err(DimlError::MissingNewline),
                 },
                 State::Indentation => match anch {
-                    Some(AnnotatedChar::Character(ch, line, column)) => {
-                        self.position = (line, column);
+                    Some(AnnotatedChar::Character(ch, line, ..)) => {
                         if self.delimiter == Some(ch) {
                             let a = std::mem::take(&mut self.strip);
                             self.strip.line = line;
@@ -224,37 +207,25 @@ where
                             self.state = State::NodeContent;
                         }
                     }
-                    Some(AnnotatedChar::LineEnding(le, line, column)) => {
-                        self.position = (line, column);
+                    Some(AnnotatedChar::LineEnding(le, ..)) => {
                         self.strip.content.extend([&self.indentation, le.as_ref()]);
                         self.indentation.clear();
                         self.state = State::LineStart;
                     }
-                    None => {
-                        return Err(DimlError::MissingNewline(
-                            self.position.0,
-                            self.position.1 + 1,
-                        ));
-                    }
+                    None => return Err(DimlError::MissingNewline),
                 },
                 State::NodeContent => match anch {
-                    Some(AnnotatedChar::Character(ch, line, column)) => {
-                        self.position = (line, column);
+                    Some(AnnotatedChar::Character(ch, ..)) => {
                         self.strip.content.push(ch);
                     }
-                    Some(AnnotatedChar::LineEnding(le, line, column)) => {
-                        self.position = (line, column);
+                    Some(AnnotatedChar::LineEnding(le, ..)) => {
                         self.strip.content.push_str(le.as_ref());
                         self.state = State::LineStart;
                     }
-                    None => {
-                        return Err(DimlError::MissingNewline(
-                            self.position.0,
-                            self.position.1 + 1,
-                        ));
-                    }
+                    None => return Err(DimlError::MissingNewline),
                 },
             }
         }
+        Ok(None)
     }
 }

@@ -21,13 +21,8 @@ pub enum DimlError {
         /// Column number.
         usize,
     ),
-    /// Reports a missing newline at the end of the last line.
-    MissingNewline(
-        /// Line number.
-        usize,
-        /// Column number.
-        usize,
-    ),
+    /// Reports a missing newline at the end of input.
+    MissingNewline,
     /// Reports invalid indentation.
     InvalidIndentation(
         /// Length of the invalid indent.
@@ -75,11 +70,8 @@ impl Display for DimlError {
                     ch.escape_debug()
                 )
             }
-            Self::MissingNewline(line, column) => {
-                write!(
-                    f,
-                    "missing newline at the end of input at line {line}, column {column}"
-                )
+            Self::MissingNewline => {
+                write!(f, "missing newline at the end of input")
             }
             Self::InvalidIndentation(indent, multiplier, line, column) => {
                 write!(
