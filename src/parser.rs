@@ -166,7 +166,6 @@ where
     I: Iterator<Item = AnnotatedChar>,
 {
     type Item = Result<Strip>;
-
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let anch = self.iterator.next();
