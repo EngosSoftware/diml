@@ -123,12 +123,8 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
                         return Err(DimlError::UnexpectedCharacter(ch, line, column));
                     }
                 }
-                AnnotatedChar::LineEnding(line_ending, line, column) => {
-                    return Err(DimlError::UnexpectedCharacter(
-                        line_ending.first(),
-                        line,
-                        column,
-                    ));
+                AnnotatedChar::LineEnding(le, line, column) => {
+                    return Err(DimlError::UnexpectedCharacter(le.first(), line, column));
                 }
             },
             State::LineStart => match anch {
@@ -145,8 +141,8 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
                         state = State::NodeContent;
                     }
                 }
-                AnnotatedChar::LineEnding(line_ending, ..) => {
-                    strip.content.push_str(line_ending.as_ref());
+                AnnotatedChar::LineEnding(le, ..) => {
+                    strip.content.push_str(le.as_ref());
                 }
             },
             State::NodeName => match anch {
@@ -160,8 +156,8 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
                         return Err(DimlError::UnexpectedCharacter(ch, line, column));
                     }
                 }
-                AnnotatedChar::LineEnding(line_ending, ..) => {
-                    strip.content.push_str(line_ending.as_ref());
+                AnnotatedChar::LineEnding(le, ..) => {
+                    strip.content.push_str(le.as_ref());
                     state = State::LineStart;
                 }
             },
@@ -181,16 +177,16 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
                         state = State::NodeContent;
                     }
                 }
-                AnnotatedChar::LineEnding(line_ending, ..) => {
-                    strip.content.extend([&indentation, line_ending.as_ref()]);
+                AnnotatedChar::LineEnding(le, ..) => {
+                    strip.content.extend([&indentation, le.as_ref()]);
                     indentation.clear();
                     state = State::LineStart;
                 }
             },
             State::NodeContent => match anch {
                 AnnotatedChar::Character(ch, ..) => strip.content.push(ch),
-                AnnotatedChar::LineEnding(line_ending, ..) => {
-                    strip.content.push_str(line_ending.as_ref());
+                AnnotatedChar::LineEnding(le, ..) => {
+                    strip.content.push_str(le.as_ref());
                     state = State::LineStart;
                 }
             },
