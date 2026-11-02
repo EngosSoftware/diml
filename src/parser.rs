@@ -24,10 +24,10 @@ pub fn parse(input: &str) -> Result<Node> {
     Ok(root)
 }
 
-/// Parsed item.
+/// Recognized strip of text.
 #[derive(Default)]
-struct Item {
-    /// Line number where the item starts.
+struct Strip {
+    /// Line number where the strip starts.
     line: usize,
     /// Number of whitespaces in the indentation.
     indent: usize,
@@ -56,7 +56,7 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
     let mut nodes = vec![];
     let mut multiplier = 0;
     let mut last_level = 0;
-    let (items, delimiter) = items(input)?;
+    let (items, delimiter) = strips(input)?;
     for item in items {
         if multiplier == 0 && item.indent > 0 {
             multiplier = item.indent;
@@ -85,14 +85,14 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
     Ok(nodes)
 }
 
-/// Recognizes items in the provided input.
-fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
+/// Recognizes strips of text.
+fn strips(input: &str) -> Result<(Vec<Strip>, Option<char>)> {
     let mut state = State::Start;
     let mut items = vec![];
     let mut delimiter = None;
     let mut position = (0, 0);
     let mut indentation = String::new();
-    let mut item = Item::default();
+    let mut item = Strip::default();
     for anch in input.chars().annotated() {
         position = anch.position();
         match state {
