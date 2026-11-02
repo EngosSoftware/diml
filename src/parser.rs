@@ -67,8 +67,9 @@ pub fn parse(input: &str) -> Result<Node> {
 fn indented(input: &str) -> Result<Vec<Strip>> {
     let mut multiplier = 0;
     let mut previous_level = 0;
-    let mut strips = Strips::new(input.chars().annotated()).strips()?;
-    for strip in &mut strips {
+    let mut strips = Vec::new();
+    let mut s = Strips::new(input.chars().annotated());
+    while let Some(mut strip) = s.next()? {
         if let Some((column, ch)) = strip.indentation.char_indices().find(|(_, ch)| *ch != ' ') {
             return Err(DimlError::UnexpectedIndentationCharacter(
                 ch,
@@ -98,6 +99,7 @@ fn indented(input: &str) -> Result<Vec<Strip>> {
         }
         previous_level = level;
         strip.level = level;
+        strips.push(strip);
     }
     Ok(strips)
 }
@@ -111,8 +113,8 @@ where
     position: (usize, usize),
     indentation: String,
     strip: Strip,
-    s_trips: Vec<Strip>,
     iterator: I,
+    finished: bool,
 }
 
 impl<I> Strips<I>
@@ -126,17 +128,22 @@ where
             position: (0, 0),
             indentation: String::new(),
             strip: Strip::default(),
-            s_trips: vec![],
             iterator,
+            finished: false,
         }
     }
 
-    fn strips(mut self) -> Result<Vec<Strip>> {
-        for anch in self.iterator {
-            self.position = anch.position();
+    #[expect(clippy::too_many_lines)]
+    fn next(&mut self) -> Result<Option<Strip>> {
+        if self.finished {
+            return Ok(None);
+        }
+        loop {
+            let anch = self.iterator.next();
             match self.state {
                 State::Start => match anch {
-                    AnnotatedChar::Character(ch, line, column) => {
+                    Some(AnnotatedChar::Character(ch, line, column)) => {
+                        self.position = (line, column);
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.delimiter = Some(ch);
                             self.strip.line = line;
@@ -145,16 +152,19 @@ where
                             return Err(DimlError::UnexpectedCharacter(ch, line, column));
                         }
                     }
-                    AnnotatedChar::LineEnding(le, line, column) => {
+                    Some(AnnotatedChar::LineEnding(le, line, column)) => {
                         return Err(DimlError::UnexpectedCharacter(le.first(), line, column));
                     }
+                    None => return Err(DimlError::EmptyInput),
                 },
                 State::LineStart => match anch {
-                    AnnotatedChar::Character(ch, line, _) => {
+                    Some(AnnotatedChar::Character(ch, line, column)) => {
+                        self.position = (line, column);
                         if self.delimiter == Some(ch) {
-                            self.s_trips.push(std::mem::take(&mut self.strip));
+                            let a = std::mem::take(&mut self.strip);
                             self.strip.line = line;
                             self.state = State::NodeName;
+                            return Ok(Some(a));
                         } else if ch.is_whitespace() {
                             self.indentation.push(ch);
                             self.state = State::Indentation;
@@ -163,12 +173,18 @@ where
                             self.state = State::NodeContent;
                         }
                     }
-                    AnnotatedChar::LineEnding(le, ..) => {
+                    Some(AnnotatedChar::LineEnding(le, line, column)) => {
+                        self.position = (line, column);
                         self.strip.content.push_str(le.as_ref());
+                    }
+                    None => {
+                        self.finished = true;
+                        return Ok(Some(std::mem::take(&mut self.strip)));
                     }
                 },
                 State::NodeName => match anch {
-                    AnnotatedChar::Character(ch, line, column) => {
+                    Some(AnnotatedChar::Character(ch, line, column)) => {
+                        self.position = (line, column);
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.strip.name.push(ch);
                         } else if ch.is_whitespace() {
@@ -178,18 +194,27 @@ where
                             return Err(DimlError::UnexpectedCharacter(ch, line, column));
                         }
                     }
-                    AnnotatedChar::LineEnding(le, ..) => {
+                    Some(AnnotatedChar::LineEnding(le, line, column)) => {
+                        self.position = (line, column);
                         self.strip.content.push_str(le.as_ref());
                         self.state = State::LineStart;
                     }
+                    None => {
+                        return Err(DimlError::MissingNewline(
+                            self.position.0,
+                            self.position.1 + 1,
+                        ));
+                    }
                 },
                 State::Indentation => match anch {
-                    AnnotatedChar::Character(ch, line, _) => {
+                    Some(AnnotatedChar::Character(ch, line, column)) => {
+                        self.position = (line, column);
                         if self.delimiter == Some(ch) {
-                            self.s_trips.push(std::mem::take(&mut self.strip));
+                            let a = std::mem::take(&mut self.strip);
                             self.strip.line = line;
                             self.strip.indentation = std::mem::take(&mut self.indentation);
                             self.state = State::NodeName;
+                            return Ok(Some(a));
                         } else if ch.is_whitespace() {
                             self.indentation.push(ch);
                         } else {
@@ -199,31 +224,37 @@ where
                             self.state = State::NodeContent;
                         }
                     }
-                    AnnotatedChar::LineEnding(le, ..) => {
+                    Some(AnnotatedChar::LineEnding(le, line, column)) => {
+                        self.position = (line, column);
                         self.strip.content.extend([&self.indentation, le.as_ref()]);
                         self.indentation.clear();
                         self.state = State::LineStart;
                     }
+                    None => {
+                        return Err(DimlError::MissingNewline(
+                            self.position.0,
+                            self.position.1 + 1,
+                        ));
+                    }
                 },
                 State::NodeContent => match anch {
-                    AnnotatedChar::Character(ch, ..) => self.strip.content.push(ch),
-                    AnnotatedChar::LineEnding(le, ..) => {
+                    Some(AnnotatedChar::Character(ch, line, column)) => {
+                        self.position = (line, column);
+                        self.strip.content.push(ch);
+                    }
+                    Some(AnnotatedChar::LineEnding(le, line, column)) => {
+                        self.position = (line, column);
                         self.strip.content.push_str(le.as_ref());
                         self.state = State::LineStart;
+                    }
+                    None => {
+                        return Err(DimlError::MissingNewline(
+                            self.position.0,
+                            self.position.1 + 1,
+                        ));
                     }
                 },
             }
         }
-        match self.state {
-            State::Start => return Err(DimlError::EmptyInput),
-            State::LineStart => self.s_trips.push(std::mem::take(&mut self.strip)),
-            _ => {
-                return Err(DimlError::MissingNewline(
-                    self.position.0,
-                    self.position.1 + 1,
-                ));
-            }
-        }
-        Ok(self.s_trips)
     }
 }
