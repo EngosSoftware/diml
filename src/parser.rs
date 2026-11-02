@@ -124,11 +124,11 @@ fn segments(input: &str) -> Result<Vec<Segment>> {
 /// Recognizes text strips.
 fn strips(input: &str) -> Result<Vec<Strip>> {
     let mut state = State::Start;
-    let mut items = vec![];
     let mut delimiter = None;
     let mut position = (0, 0);
     let mut indentation = String::new();
-    let mut item = Strip::default();
+    let mut strip = Strip::default();
+    let mut strips = vec![];
     for anch in input.chars().annotated() {
         position = anch.position();
         match state {
@@ -136,7 +136,7 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
                 AnnotatedChar::Character(ch, line, column) => {
                     if is_allowed_character(ch) {
                         delimiter = Some(ch);
-                        item.line = line;
+                        strip.line = line;
                         state = State::NodeName;
                     } else {
                         return Err(DimlError::UnexpectedCharacter(ch, line, column));
@@ -149,63 +149,63 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
             State::LineStart => match anch {
                 AnnotatedChar::Character(ch, line, _) => {
                     if delimiter == Some(ch) {
-                        items.push(std::mem::take(&mut item));
-                        item.line = line;
+                        strips.push(std::mem::take(&mut strip));
+                        strip.line = line;
                         state = State::NodeName;
                     } else if ch.is_whitespace() {
                         indentation.push(ch);
                         state = State::Indentation;
                     } else {
-                        item.content.push(ch);
+                        strip.content.push(ch);
                         state = State::NodeContent;
                     }
                 }
                 AnnotatedChar::LineEnding(le, ..) => {
-                    item.content.push_str(le.as_ref());
+                    strip.content.push_str(le.as_ref());
                 }
             },
             State::NodeName => match anch {
                 AnnotatedChar::Character(ch, line, column) => {
                     if is_allowed_character(ch) {
-                        item.name.push(ch);
+                        strip.name.push(ch);
                     } else if ch.is_whitespace() {
-                        item.content.push(ch);
+                        strip.content.push(ch);
                         state = State::NodeContent;
                     } else {
                         return Err(DimlError::UnexpectedCharacter(ch, line, column));
                     }
                 }
                 AnnotatedChar::LineEnding(le, ..) => {
-                    item.content.push_str(le.as_ref());
+                    strip.content.push_str(le.as_ref());
                     state = State::LineStart;
                 }
             },
             State::Indentation => match anch {
                 AnnotatedChar::Character(ch, line, _) => {
                     if delimiter == Some(ch) {
-                        items.push(std::mem::take(&mut item));
-                        item.line = line;
-                        item.indentation = std::mem::take(&mut indentation);
+                        strips.push(std::mem::take(&mut strip));
+                        strip.line = line;
+                        strip.indentation = std::mem::take(&mut indentation);
                         state = State::NodeName;
                     } else if ch.is_whitespace() {
                         indentation.push(ch);
                     } else {
-                        item.content.push_str(&indentation);
-                        item.content.push(ch);
+                        strip.content.push_str(&indentation);
+                        strip.content.push(ch);
                         indentation.clear();
                         state = State::NodeContent;
                     }
                 }
                 AnnotatedChar::LineEnding(le, ..) => {
-                    item.content.extend([&indentation, le.as_ref()]);
+                    strip.content.extend([&indentation, le.as_ref()]);
                     indentation.clear();
                     state = State::LineStart;
                 }
             },
             State::NodeContent => match anch {
-                AnnotatedChar::Character(ch, ..) => item.content.push(ch),
+                AnnotatedChar::Character(ch, ..) => strip.content.push(ch),
                 AnnotatedChar::LineEnding(le, ..) => {
-                    item.content.push_str(le.as_ref());
+                    strip.content.push_str(le.as_ref());
                     state = State::LineStart;
                 }
             },
@@ -213,10 +213,10 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
     }
     match state {
         State::Start => return Err(DimlError::EmptyInput),
-        State::LineStart => items.push(std::mem::take(&mut item)),
+        State::LineStart => strips.push(std::mem::take(&mut strip)),
         _ => return Err(DimlError::MissingNewline(position.0, position.1 + 1)),
     }
-    Ok(items)
+    Ok(strips)
 }
 
 /// Validates a delimiter or node name character.
