@@ -5,6 +5,7 @@ use crate::{DimlError, Node};
 use anch::{Annotated, AnnotatedChar};
 
 /// Parser state.
+#[derive(PartialEq, Eq)]
 enum State {
     /// At the beginning of the input.
     Start,
@@ -16,6 +17,8 @@ enum State {
     NodeName,
     /// Inside the node content.
     NodeContent,
+    /// Finished parsing.
+    Finished,
 }
 
 /// Recognized text strip.
@@ -109,11 +112,10 @@ where
     I: Iterator<Item = AnnotatedChar>,
 {
     state: State,
+    iterator: I,
     delimiter: Option<char>,
     indentation: String,
     strip: Strip,
-    iterator: I,
-    finished: bool,
 }
 
 impl<I> Strips<I>
@@ -123,16 +125,15 @@ where
     fn new(iterator: I) -> Self {
         Self {
             state: State::Start,
+            iterator,
             delimiter: None,
             indentation: String::new(),
             strip: Strip::default(),
-            iterator,
-            finished: false,
         }
     }
 
     fn next(&mut self) -> Result<Option<Strip>> {
-        while !self.finished {
+        loop {
             let anch = self.iterator.next();
             match self.state {
                 State::Start => match anch {
@@ -169,7 +170,7 @@ where
                         self.strip.content.push_str(le.as_ref());
                     }
                     None => {
-                        self.finished = true;
+                        self.state = State::Finished;
                         return Ok(Some(std::mem::take(&mut self.strip)));
                     }
                 },
@@ -224,8 +225,8 @@ where
                     }
                     None => return Err(DimlError::MissingNewline),
                 },
+                State::Finished => return Ok(None),
             }
         }
-        Ok(None)
     }
 }
