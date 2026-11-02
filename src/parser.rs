@@ -51,7 +51,7 @@ pub fn parse(input: &str) -> Result<Node> {
         stack.last_mut().unwrap().0.add_child(child);
     }
     let mut stack = vec![(Node::new(0, String::new(), String::new()), 0)];
-    for strip in IndentedStrips::new(Strips::new(input.chars().annotated())) {
+    for strip in LeveledStrips::new(Strips::new(input.chars().annotated())) {
         let strip = strip?;
         while stack.last().is_some_and(|(_, level)| *level >= strip.level) {
             append_child(&mut stack);
@@ -67,7 +67,7 @@ pub fn parse(input: &str) -> Result<Node> {
     Ok(stack.pop().unwrap().0)
 }
 
-struct IndentedStrips<I>
+struct LeveledStrips<I>
 where
     I: Iterator<Item = Result<Strip>>,
 {
@@ -76,7 +76,7 @@ where
     level: usize,
 }
 
-impl<I> IndentedStrips<I>
+impl<I> LeveledStrips<I>
 where
     I: Iterator<Item = Result<Strip>>,
 {
@@ -89,7 +89,7 @@ where
     }
 }
 
-impl<I> Iterator for IndentedStrips<I>
+impl<I> Iterator for LeveledStrips<I>
 where
     I: Iterator<Item = Result<Strip>>,
 {
@@ -100,7 +100,7 @@ where
                 if let Some((column, ch)) =
                     strip.indentation.char_indices().find(|(_, ch)| *ch != ' ')
                 {
-                    return Some(Err(DimlError::UnexpectedIndentationCharacter(
+                    return Some(Err(DimlError::UnexpectedCharacter(
                         ch,
                         strip.line,
                         column + 1,

@@ -34,15 +34,6 @@ pub enum DimlError {
         /// Column number.
         usize,
     ),
-    /// Reports unexpected indentation character.
-    UnexpectedIndentationCharacter(
-        /// Unexpected indentation character.
-        char,
-        /// Line number.
-        usize,
-        /// Column number.
-        usize,
-    ),
     /// Reports skipped indentation level.
     SkippedIndentation(
         /// Previous indentation level.
@@ -77,13 +68,6 @@ impl Display for DimlError {
                 write!(
                     f,
                     "invalid indentation {indent}, expected a multiple of {multiplier} spaces at line {line}, column {column}"
-                )
-            }
-            Self::UnexpectedIndentationCharacter(ch, line, column) => {
-                write!(
-                    f,
-                    "unexpected indentation character '{}' at line {line}, column {column}",
-                    ch.escape_debug()
                 )
             }
             Self::SkippedIndentation(previous, level, line, column) => {

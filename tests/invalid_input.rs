@@ -170,7 +170,7 @@ fn _0016() {
     // Unexpected character in indentation (only spaces are allowed in indentation).
     let input = ".A\n  .B\n \t.C\n  .D\n";
     assert_eq!(
-        r"unexpected indentation character '\u{a0}' at line 3, column 1",
+        r"unexpected character '\u{a0}' at line 3, column 1",
         parse(input).unwrap_err().to_string()
     );
 }
@@ -180,7 +180,7 @@ fn _0017() {
     // Unexpected character in indentation (only spaces are allowed in indentation).
     let input = ".A\n  .B\n \t.C\n  .D\n";
     assert_eq!(
-        r"unexpected indentation character '\t' at line 3, column 2",
+        r"unexpected character '\t' at line 3, column 2",
         parse(input).unwrap_err().to_string()
     );
 }
