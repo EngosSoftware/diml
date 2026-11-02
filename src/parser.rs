@@ -5,8 +5,10 @@ use crate::{DimlError, Node};
 use anch::{Annotated, AnnotatedChar};
 
 /// Parser state.
+#[derive(Default)]
 enum State {
     /// At the beginning of the input.
+    #[default]
     Start,
     /// At the beginning of the line.
     LineStart,
@@ -67,7 +69,7 @@ pub fn parse(input: &str) -> Result<Node> {
 fn indented(input: &str) -> Result<Vec<Strip>> {
     let mut multiplier = 0;
     let mut previous_level = 0;
-    let mut strips = strips(input)?;
+    let mut strips = Strips::default().strips(input)?;
     for strip in &mut strips {
         if let Some((column, ch)) = strip.indentation.char_indices().find(|(_, ch)| *ch != ' ') {
             return Err(DimlError::UnexpectedIndentationCharacter(
@@ -102,100 +104,111 @@ fn indented(input: &str) -> Result<Vec<Strip>> {
     Ok(strips)
 }
 
-/// Recognizes strips.
-fn strips(input: &str) -> Result<Vec<Strip>> {
-    let mut state = State::Start;
-    let mut delimiter = None;
-    let mut position = (0, 0);
-    let mut indentation = String::new();
-    let mut strip = Strip::default();
-    let mut strips = vec![];
-    for anch in input.chars().annotated() {
-        position = anch.position();
-        match state {
-            State::Start => match anch {
-                AnnotatedChar::Character(ch, line, column) => {
-                    if !ch.is_control() && !ch.is_whitespace() {
-                        delimiter = Some(ch);
-                        strip.line = line;
-                        state = State::NodeName;
-                    } else {
-                        return Err(DimlError::UnexpectedCharacter(ch, line, column));
+#[derive(Default)]
+struct Strips {
+    state: State,
+    delimiter: Option<char>,
+    position: (usize, usize),
+    indentation: String,
+    strip: Strip,
+    strips: Vec<Strip>,
+}
+
+impl Strips {
+    /// Recognizes strips.
+    fn strips(mut self, input: &str) -> Result<Vec<Strip>> {
+        for anch in input.chars().annotated() {
+            self.position = anch.position();
+            match self.state {
+                State::Start => match anch {
+                    AnnotatedChar::Character(ch, line, column) => {
+                        if !ch.is_control() && !ch.is_whitespace() {
+                            self.delimiter = Some(ch);
+                            self.strip.line = line;
+                            self.state = State::NodeName;
+                        } else {
+                            return Err(DimlError::UnexpectedCharacter(ch, line, column));
+                        }
                     }
-                }
-                AnnotatedChar::LineEnding(le, line, column) => {
-                    return Err(DimlError::UnexpectedCharacter(le.first(), line, column));
-                }
-            },
-            State::LineStart => match anch {
-                AnnotatedChar::Character(ch, line, _) => {
-                    if delimiter == Some(ch) {
-                        strips.push(std::mem::take(&mut strip));
-                        strip.line = line;
-                        state = State::NodeName;
-                    } else if ch.is_whitespace() {
-                        indentation.push(ch);
-                        state = State::Indentation;
-                    } else {
-                        strip.content.push(ch);
-                        state = State::NodeContent;
+                    AnnotatedChar::LineEnding(le, line, column) => {
+                        return Err(DimlError::UnexpectedCharacter(le.first(), line, column));
                     }
-                }
-                AnnotatedChar::LineEnding(le, ..) => {
-                    strip.content.push_str(le.as_ref());
-                }
-            },
-            State::NodeName => match anch {
-                AnnotatedChar::Character(ch, line, column) => {
-                    if !ch.is_control() && !ch.is_whitespace() {
-                        strip.name.push(ch);
-                    } else if ch.is_whitespace() {
-                        strip.content.push(ch);
-                        state = State::NodeContent;
-                    } else {
-                        return Err(DimlError::UnexpectedCharacter(ch, line, column));
+                },
+                State::LineStart => match anch {
+                    AnnotatedChar::Character(ch, line, _) => {
+                        if self.delimiter == Some(ch) {
+                            self.strips.push(std::mem::take(&mut self.strip));
+                            self.strip.line = line;
+                            self.state = State::NodeName;
+                        } else if ch.is_whitespace() {
+                            self.indentation.push(ch);
+                            self.state = State::Indentation;
+                        } else {
+                            self.strip.content.push(ch);
+                            self.state = State::NodeContent;
+                        }
                     }
-                }
-                AnnotatedChar::LineEnding(le, ..) => {
-                    strip.content.push_str(le.as_ref());
-                    state = State::LineStart;
-                }
-            },
-            State::Indentation => match anch {
-                AnnotatedChar::Character(ch, line, _) => {
-                    if delimiter == Some(ch) {
-                        strips.push(std::mem::take(&mut strip));
-                        strip.line = line;
-                        strip.indentation = std::mem::take(&mut indentation);
-                        state = State::NodeName;
-                    } else if ch.is_whitespace() {
-                        indentation.push(ch);
-                    } else {
-                        strip.content.push_str(&indentation);
-                        strip.content.push(ch);
-                        indentation.clear();
-                        state = State::NodeContent;
+                    AnnotatedChar::LineEnding(le, ..) => {
+                        self.strip.content.push_str(le.as_ref());
                     }
-                }
-                AnnotatedChar::LineEnding(le, ..) => {
-                    strip.content.extend([&indentation, le.as_ref()]);
-                    indentation.clear();
-                    state = State::LineStart;
-                }
-            },
-            State::NodeContent => match anch {
-                AnnotatedChar::Character(ch, ..) => strip.content.push(ch),
-                AnnotatedChar::LineEnding(le, ..) => {
-                    strip.content.push_str(le.as_ref());
-                    state = State::LineStart;
-                }
-            },
+                },
+                State::NodeName => match anch {
+                    AnnotatedChar::Character(ch, line, column) => {
+                        if !ch.is_control() && !ch.is_whitespace() {
+                            self.strip.name.push(ch);
+                        } else if ch.is_whitespace() {
+                            self.strip.content.push(ch);
+                            self.state = State::NodeContent;
+                        } else {
+                            return Err(DimlError::UnexpectedCharacter(ch, line, column));
+                        }
+                    }
+                    AnnotatedChar::LineEnding(le, ..) => {
+                        self.strip.content.push_str(le.as_ref());
+                        self.state = State::LineStart;
+                    }
+                },
+                State::Indentation => match anch {
+                    AnnotatedChar::Character(ch, line, _) => {
+                        if self.delimiter == Some(ch) {
+                            self.strips.push(std::mem::take(&mut self.strip));
+                            self.strip.line = line;
+                            self.strip.indentation = std::mem::take(&mut self.indentation);
+                            self.state = State::NodeName;
+                        } else if ch.is_whitespace() {
+                            self.indentation.push(ch);
+                        } else {
+                            self.strip.content.push_str(&self.indentation);
+                            self.strip.content.push(ch);
+                            self.indentation.clear();
+                            self.state = State::NodeContent;
+                        }
+                    }
+                    AnnotatedChar::LineEnding(le, ..) => {
+                        self.strip.content.extend([&self.indentation, le.as_ref()]);
+                        self.indentation.clear();
+                        self.state = State::LineStart;
+                    }
+                },
+                State::NodeContent => match anch {
+                    AnnotatedChar::Character(ch, ..) => self.strip.content.push(ch),
+                    AnnotatedChar::LineEnding(le, ..) => {
+                        self.strip.content.push_str(le.as_ref());
+                        self.state = State::LineStart;
+                    }
+                },
+            }
         }
+        match self.state {
+            State::Start => return Err(DimlError::EmptyInput),
+            State::LineStart => self.strips.push(std::mem::take(&mut self.strip)),
+            _ => {
+                return Err(DimlError::MissingNewline(
+                    self.position.0,
+                    self.position.1 + 1,
+                ));
+            }
+        }
+        Ok(self.strips)
     }
-    match state {
-        State::Start => return Err(DimlError::EmptyInput),
-        State::LineStart => strips.push(std::mem::take(&mut strip)),
-        _ => return Err(DimlError::MissingNewline(position.0, position.1 + 1)),
-    }
-    Ok(strips)
 }
