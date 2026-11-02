@@ -124,8 +124,8 @@ where
 {
     fn new(iterator: I) -> Self {
         Self {
-            state: State::Start,
             iterator,
+            state: State::Start,
             delimiter: None,
             indentation: String::new(),
             strip: Strip::default(),
@@ -138,37 +138,32 @@ where
     I: Iterator<Item = AnnotatedChar>,
 {
     type Item = Result<Strip>;
-
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let anch = self.iterator.next();
             match self.state {
                 State::Start => match anch {
-                    Some(AnnotatedChar::Character(ch, line, column)) => {
+                    Some(AnnotatedChar::Character(ch, line, col)) => {
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.delimiter = Some(ch);
                             self.strip.line = line;
                             self.state = State::NodeName;
                         } else {
-                            return Some(Err(DimlError::UnexpectedCharacter(ch, line, column)));
+                            return Some(Err(DimlError::UnexpectedCharacter(ch, line, col)));
                         }
                     }
-                    Some(AnnotatedChar::LineEnding(le, line, column)) => {
-                        return Some(Err(DimlError::UnexpectedCharacter(
-                            le.first(),
-                            line,
-                            column,
-                        )));
+                    Some(AnnotatedChar::LineEnding(le, line, col)) => {
+                        return Some(Err(DimlError::UnexpectedCharacter(le.first(), line, col)));
                     }
                     None => return Some(Err(DimlError::EmptyInput)),
                 },
                 State::LineStart => match anch {
                     Some(AnnotatedChar::Character(ch, line, ..)) => {
                         if self.delimiter == Some(ch) {
-                            let a = std::mem::take(&mut self.strip);
+                            let strip = std::mem::take(&mut self.strip);
                             self.strip.line = line;
                             self.state = State::NodeName;
-                            return Some(Ok(a));
+                            return Some(Ok(strip));
                         } else if ch.is_whitespace() {
                             self.indentation.push(ch);
                             self.state = State::Indentation;
@@ -186,14 +181,14 @@ where
                     }
                 },
                 State::NodeName => match anch {
-                    Some(AnnotatedChar::Character(ch, line, column)) => {
+                    Some(AnnotatedChar::Character(ch, line, col)) => {
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.strip.name.push(ch);
                         } else if ch.is_whitespace() {
                             self.strip.content.push(ch);
                             self.state = State::NodeContent;
                         } else {
-                            return Some(Err(DimlError::UnexpectedCharacter(ch, line, column)));
+                            return Some(Err(DimlError::UnexpectedCharacter(ch, line, col)));
                         }
                     }
                     Some(AnnotatedChar::LineEnding(le, ..)) => {
@@ -205,11 +200,11 @@ where
                 State::Indentation => match anch {
                     Some(AnnotatedChar::Character(ch, line, ..)) => {
                         if self.delimiter == Some(ch) {
-                            let a = std::mem::take(&mut self.strip);
+                            let strip = std::mem::take(&mut self.strip);
                             self.strip.line = line;
                             self.strip.indentation = std::mem::take(&mut self.indentation);
                             self.state = State::NodeName;
-                            return Some(Ok(a));
+                            return Some(Ok(strip));
                         } else if ch.is_whitespace() {
                             self.indentation.push(ch);
                         } else {
