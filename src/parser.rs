@@ -22,6 +22,29 @@ enum State {
     Finished,
 }
 
+#[derive(Default)]
+struct Span {
+    start: Option<usize>,
+    end: Option<usize>,
+}
+
+impl Span {
+    fn update(&mut self, offset: usize, ch: char) {
+        if self.start.is_none() {
+            self.start = Some(offset);
+        }
+        self.end = Some(offset + ch.len_utf8());
+    }
+
+    fn text(&self, input: &str) -> String {
+        if let Some((start, end)) = self.start.zip(self.end) {
+            input[start..end].to_string()
+        } else {
+            String::new()
+        }
+    }
+}
+
 /// Recognized text strip.
 #[derive(Default)]
 struct Strip {
@@ -35,6 +58,8 @@ struct Strip {
     name: String,
     /// Content.
     content: String,
+
+    name_span: Span,
 }
 
 /// Parses input.
@@ -57,6 +82,7 @@ pub fn parse(input: &str) -> Result<Node> {
         while stack.last().is_some_and(|(_, level)| *level >= strip.level) {
             append_child(&mut stack);
         }
+        assert_eq!(strip.name, strip.name_span.text(input));
         stack.push((
             Node::new(strip.line, strip.name, strip.content),
             strip.level,
@@ -225,11 +251,12 @@ impl Iterator for Strips<'_> {
                     }
                 },
                 State::NodeName => match anch {
-                    Some((_, ch, le)) => {
+                    Some((offset, ch, le)) => {
                         if ch == '\n' || ch == '\r' {
                             self.strip.content.push_str(le);
                             self.state = State::LineStart;
                         } else if !ch.is_control() && !ch.is_whitespace() {
+                            self.strip.name_span.update(offset, ch);
                             self.strip.name.push(ch);
                         } else if ch.is_whitespace() {
                             self.strip.content.push(ch);
