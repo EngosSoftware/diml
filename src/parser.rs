@@ -133,7 +133,7 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
         match state {
             State::Start => match anch {
                 AnnotatedChar::Character(ch, line, column) => {
-                    if is_allowed_character(ch) {
+                    if !ch.is_control() && !ch.is_whitespace() {
                         delimiter = Some(ch);
                         strip.line = line;
                         state = State::NodeName;
@@ -165,7 +165,7 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
             },
             State::NodeName => match anch {
                 AnnotatedChar::Character(ch, line, column) => {
-                    if is_allowed_character(ch) {
+                    if !ch.is_control() && !ch.is_whitespace() {
                         strip.name.push(ch);
                     } else if ch.is_whitespace() {
                         strip.content.push(ch);
@@ -216,9 +216,4 @@ fn strips(input: &str) -> Result<Vec<Strip>> {
         _ => return Err(DimlError::MissingNewline(position.0, position.1 + 1)),
     }
     Ok(strips)
-}
-
-/// Validates a delimiter or node name character.
-fn is_allowed_character(ch: char) -> bool {
-    !ch.is_control() && !ch.is_whitespace()
 }
