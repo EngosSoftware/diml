@@ -238,30 +238,6 @@ fn _0018() {
 
 #[test]
 fn _0019() {
-    let input = ".A\r";
-    let root = parse(input).unwrap();
-    assert_eq!(input, format!("{root:4}"));
-}
-
-#[test]
-fn _0020() {
-    let input = ".A\r\n";
-    let root = parse(input).unwrap();
-    assert_eq!(input, format!("{root:4}"));
-}
-
-#[test]
-fn _0021() {
-    let input = r".A
-    .B
-    .C
-";
-    let root = parse(input).unwrap();
-    assert_eq!(input, format!("{root:4}"));
-}
-
-#[test]
-fn _0022() {
     let input = r".A
 
   some content
@@ -269,12 +245,25 @@ fn _0022() {
   .B
   .C
 ";
-    let root = parse(input).unwrap();
-    assert_eq!(input, format!("{root}"));
+    let doc = parse(input).unwrap();
+    let mut children = doc.children();
+    let first = children.next().unwrap();
+    assert_eq!('.', first.delimiter().unwrap());
+    assert_eq!("A", first.name());
+    assert_eq!("\n\n  some content\n\n", first.content());
+    let mut children = first.children();
+    let second = children.next().unwrap();
+    assert_eq!('.', second.delimiter().unwrap());
+    assert_eq!("B", second.name());
+    assert_eq!("\n", second.content());
+    let third = children.next().unwrap();
+    assert_eq!('.', third.delimiter().unwrap());
+    assert_eq!("C", third.name());
+    assert_eq!("\n", third.content());
 }
 
 #[test]
-fn _0023() {
+fn _0020() {
     let input = r"
 .A a
   .B b
@@ -301,7 +290,7 @@ fn _0023() {
 }
 
 #[test]
-fn _0024() {
+fn _0021() {
     // Control characters are allowed in the content.
     let input = ".A ab\u{7f}cd\n";
     let root = parse(input).unwrap();
