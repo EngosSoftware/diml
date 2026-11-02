@@ -93,10 +93,10 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
     let mut position = (0, 0);
     let mut indentation = String::new();
     let mut item = Item::default();
-    for annotated_character in input.chars().annotated() {
-        position = annotated_character.position();
+    for anch in input.chars().annotated() {
+        position = anch.position();
         match state {
-            State::Start => match annotated_character {
+            State::Start => match anch {
                 AnnotatedChar::Character(ch, line, column) => {
                     if is_allowed_character(ch) {
                         delimiter = Some(ch);
@@ -110,7 +110,7 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
                     return Err(DimlError::UnexpectedCharacter(le.first(), line, column));
                 }
             },
-            State::NewLine => match annotated_character {
+            State::NewLine => match anch {
                 AnnotatedChar::Character(ch, line, _) => {
                     if delimiter == Some(ch) {
                         items.push(std::mem::take(&mut item));
@@ -128,7 +128,7 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
                     item.content.push_str(le.as_ref());
                 }
             },
-            State::NodeName => match annotated_character {
+            State::NodeName => match anch {
                 AnnotatedChar::Character(ch, line, column) => {
                     if is_allowed_character(ch) {
                         item.name.push(ch);
@@ -144,7 +144,7 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
                     state = State::NewLine;
                 }
             },
-            State::Indentation => match annotated_character {
+            State::Indentation => match anch {
                 AnnotatedChar::Character(ch, line, _) => {
                     if delimiter == Some(ch) {
                         items.push(std::mem::take(&mut item));
@@ -167,7 +167,7 @@ fn items(input: &str) -> Result<(Vec<Item>, Option<char>)> {
                     state = State::NewLine;
                 }
             },
-            State::NodeContent => match annotated_character {
+            State::NodeContent => match anch {
                 AnnotatedChar::Character(ch, ..) => item.content.push(ch),
                 AnnotatedChar::LineEnding(le, ..) => {
                     item.content.push_str(le.as_ref());
