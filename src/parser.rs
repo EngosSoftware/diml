@@ -67,7 +67,7 @@ pub fn parse(input: &str) -> Result<Node> {
 fn indented(input: &str) -> Result<Vec<Strip>> {
     let mut multiplier = 0;
     let mut previous_level = 0;
-    let mut strips = Strips::new(input).strips()?;
+    let mut strips = Strips::new(input.chars().annotated()).strips()?;
     for strip in &mut strips {
         if let Some((column, ch)) = strip.indentation.char_indices().find(|(_, ch)| *ch != ' ') {
             return Err(DimlError::UnexpectedIndentationCharacter(
@@ -102,31 +102,37 @@ fn indented(input: &str) -> Result<Vec<Strip>> {
     Ok(strips)
 }
 
-struct Strips<'a> {
-    input: &'a str,
+struct Strips<I>
+where
+    I: Iterator<Item = AnnotatedChar>,
+{
     state: State,
     delimiter: Option<char>,
     position: (usize, usize),
     indentation: String,
     strip: Strip,
     s_trips: Vec<Strip>,
+    iterator: I,
 }
 
-impl<'a> Strips<'a> {
-    fn new(input: &'a str) -> Self {
+impl<I> Strips<I>
+where
+    I: Iterator<Item = AnnotatedChar>,
+{
+    fn new(iterator: I) -> Self {
         Self {
-            input,
             state: State::Start,
             delimiter: None,
             position: (0, 0),
             indentation: String::new(),
             strip: Strip::default(),
             s_trips: vec![],
+            iterator,
         }
     }
 
     fn strips(mut self) -> Result<Vec<Strip>> {
-        for anch in self.input.chars().annotated() {
+        for anch in self.iterator {
             self.position = anch.position();
             match self.state {
                 State::Start => match anch {
