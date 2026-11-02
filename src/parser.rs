@@ -90,10 +90,9 @@ fn segments(input: &str) -> Result<Vec<Segment>> {
             ));
         }
         let indent = strip.indentation.len();
-        if multiplier == 0 && indent > 0 {
+        if multiplier == 0 {
             multiplier = indent;
-        }
-        if multiplier > 0 && !indent.is_multiple_of(multiplier) {
+        } else if !indent.is_multiple_of(multiplier) {
             return Err(DimlError::InvalidIndentation(
                 indent,
                 multiplier,
