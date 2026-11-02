@@ -56,7 +56,7 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
     let mut nodes = vec![];
     let mut multiplier = 0;
     let mut last_level = 0;
-    let (items, delimiter) = strips(input)?;
+    let items = strips(input)?;
     for item in items {
         if multiplier == 0 && item.indent > 0 {
             multiplier = item.indent;
@@ -79,14 +79,14 @@ fn nodes(input: &str) -> Result<Vec<Node>> {
             ));
         }
         last_level = level;
-        let node = Node::new(level, delimiter, item.name, item.content);
+        let node = Node::new(level, item.name, item.content);
         nodes.push(node);
     }
     Ok(nodes)
 }
 
 /// Recognizes strips of text.
-fn strips(input: &str) -> Result<(Vec<Strip>, Option<char>)> {
+fn strips(input: &str) -> Result<Vec<Strip>> {
     let mut state = State::Start;
     let mut items = vec![];
     let mut delimiter = None;
@@ -181,7 +181,7 @@ fn strips(input: &str) -> Result<(Vec<Strip>, Option<char>)> {
         State::NewLine => items.push(std::mem::take(&mut item)),
         _ => return Err(DimlError::MissingNewline(position.0, position.1 + 1)),
     }
-    Ok((items, delimiter))
+    Ok(items)
 }
 
 /// Validates the indentation.

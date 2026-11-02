@@ -7,10 +7,6 @@ pub struct Node {
     /// Root (virtual) node has level `0`.
     /// Top level nodes in parsed document have level `1`.
     level: usize,
-    /// Name delimiter.
-    /// Delimiter character as defined in parsed document.
-    /// Root (virtual) node has no delimiter.
-    delimiter: Option<char>,
     /// The name of the node.
     /// Node name as defined in parsed document without delimiter.
     /// Root (virtual) node has an empty name.
@@ -29,7 +25,6 @@ impl Node {
     pub(crate) const fn root() -> Self {
         Self {
             level: 0,
-            delimiter: None,
             name: String::new(),
             content: String::new(),
             children: vec![],
@@ -37,15 +32,9 @@ impl Node {
     }
 
     /// Creates a new node.
-    pub(crate) const fn new(
-        level: usize,
-        delimiter: Option<char>,
-        name: String,
-        content: String,
-    ) -> Self {
+    pub(crate) const fn new(level: usize, name: String, content: String) -> Self {
         Self {
             level,
-            delimiter,
             name,
             content,
             children: vec![],
@@ -61,12 +50,6 @@ impl Node {
     #[must_use]
     pub const fn level(&self) -> usize {
         self.level
-    }
-
-    /// Returns the delimiter of the node.
-    #[must_use]
-    pub const fn delimiter(&self) -> Option<char> {
-        self.delimiter
     }
 
     /// Returns the node name.

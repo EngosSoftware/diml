@@ -38,7 +38,6 @@ fn _0001() {
     assert_eq!(1, root.children().len());
     let node = root.children().next().unwrap();
     assert_eq!(6, node.children().len());
-    assert_eq!('.', node.delimiter().unwrap());
     assert_eq!("A", node.name());
     assert_eq!("\n", node.content());
     assert_eq!("", node.text());

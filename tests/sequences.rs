@@ -49,11 +49,9 @@ fn eq(node1: &str, node2: &str, name1: &str, content1: &str, name2: &str, conten
     let doc = parse(&format!("{node1}{node2}")).unwrap();
     let mut children = doc.children();
     let first = children.next().unwrap();
-    assert_eq!(Some('.'), first.delimiter());
     assert_eq!(name1, first.name());
     assert_eq!(content1, first.content());
     let second = children.next().unwrap();
-    assert_eq!(Some('.'), second.delimiter());
     assert_eq!(name2, second.name());
     assert_eq!(content2, second.content());
 }
