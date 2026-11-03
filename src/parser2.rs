@@ -222,7 +222,15 @@ impl Iterator for Segments<'_> {
                 State::NodeContent => {
                     if let Some((offset, ch)) = index {
                         match ch {
-                            '\n' | '\r' => {
+                            '\r' => {
+                                self.offsets.end(offset, ch);
+                                if let Some((offset, '\n')) = self.indices.peek() {
+                                    self.offsets.end(*offset, ch);
+                                    self.indices.next();
+                                }
+                                self.state = State::LineStart
+                            }
+                            '\n' => {
                                 self.offsets.end(offset, ch);
                                 self.state = State::LineStart;
                             }
