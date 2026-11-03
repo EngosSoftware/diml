@@ -316,6 +316,19 @@ mod tests {
     }
 
     #[test]
+    fn _0006() {
+        let input = ".A a";
+        assert_eq!(
+            "missing newline at the end of input",
+            Segments::new(input.char_indices().peekable())
+                .next()
+                .unwrap()
+                .unwrap_err()
+                .to_string()
+        );
+    }
+
+    #[test]
     fn _a0001() {
         let input = ".\n";
         for segment in Segments::new(input.char_indices().peekable()) {
@@ -344,6 +357,28 @@ mod tests {
             println!("{:?}", segment);
             assert_eq!("A", segment.name(input));
             assert_eq!("\n", segment.content(input));
+        }
+    }
+
+    #[test]
+    fn _a0003_1() {
+        let input = ".A\r";
+        for segment in Segments::new(input.char_indices().peekable()) {
+            let segment = segment.unwrap();
+            println!("{:?}", segment);
+            assert_eq!("A", segment.name(input));
+            assert_eq!("\r", segment.content(input));
+        }
+    }
+
+    #[test]
+    fn _a0003_2() {
+        let input = ".A\r\n";
+        for segment in Segments::new(input.char_indices().peekable()) {
+            let segment = segment.unwrap();
+            println!("{:?}", segment);
+            assert_eq!("A", segment.name(input));
+            assert_eq!("\r\n", segment.content(input));
         }
     }
 
