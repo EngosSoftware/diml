@@ -26,16 +26,10 @@ enum State {
 }
 
 #[derive(Debug)]
-struct Span {
-    start: usize,
-    end: usize,
-}
-
-#[derive(Debug)]
 struct Segment {
     indent: usize,
-    name: Span,
-    content: Span,
+    name: (usize, usize),
+    content: (usize, usize),
 }
 
 impl Segment {
@@ -44,11 +38,11 @@ impl Segment {
     }
 
     fn name<'a>(&self, input: &'a str) -> &'a str {
-        &input[self.name.start..self.name.end]
+        &input[self.name.0..self.name.1]
     }
 
     fn content<'a>(&self, input: &'a str) -> &'a str {
-        &input[self.content.start..self.content.end]
+        &input[self.content.0..self.content.1]
     }
 }
 
@@ -90,14 +84,8 @@ impl<'a> Segments<'a> {
     fn consume_segment(&self) -> Segment {
         Segment {
             indent: self.indent,
-            name: Span {
-                start: self.offsets.1,
-                end: self.offsets.2,
-            },
-            content: Span {
-                start: self.offsets.2,
-                end: self.offsets.3,
-            },
+            name: (self.offsets.1, self.offsets.2),
+            content: (self.offsets.2, self.offsets.3),
         }
     }
 
@@ -110,6 +98,10 @@ impl<'a> Segments<'a> {
             self.indices.next();
         }
         self.end(end_offset, end_char);
+    }
+
+    fn consume_lf(&mut self, offset: usize) {
+        self.end(offset, LF);
     }
 
     fn delimiter(&mut self, offset: usize, ch: char) {
@@ -160,7 +152,7 @@ impl Iterator for Segments<'_> {
                     match index {
                         Some((offset, ch)) => match ch {
                             CR => self.consume_cr(offset),
-                            LF => self.end(offset, ch),
+                            LF => self.consume_lf(offset),
                             SP => {
                                 self.next_indent = 1;
                                 self.state = State::Indentation;
@@ -189,7 +181,7 @@ impl Iterator for Segments<'_> {
                             self.state = State::LineStart
                         }
                         LF => {
-                            self.content(offset, ch);
+                            self.consume_lf(offset);
                             self.state = State::LineStart
                         }
                         ch if ch.is_whitespace() => {
@@ -214,7 +206,7 @@ impl Iterator for Segments<'_> {
                             self.state = State::LineStart
                         }
                         LF => {
-                            self.end(offset, ch);
+                            self.consume_lf(offset);
                             self.state = State::LineStart;
                         }
                         SP => self.next_indent += 1,
@@ -240,7 +232,7 @@ impl Iterator for Segments<'_> {
                                 self.state = State::LineStart
                             }
                             LF => {
-                                self.end(offset, ch);
+                                self.consume_lf(offset);
                                 self.state = State::LineStart;
                             }
                             _ => self.end(offset, ch),
