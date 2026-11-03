@@ -52,15 +52,15 @@ impl Offsets {
         self.end = self.content;
     }
 
-    fn name(&mut self, offset: usize) {
+    fn name(&mut self, offset: usize, ch: char) {
         self.name = offset;
-        self.content = offset;
-        self.end = offset;
+        self.content = offset + ch.len_utf8();
+        self.end = self.content;
     }
 
-    fn content(&mut self, offset: usize) {
+    fn content(&mut self, offset: usize, ch: char) {
         self.content = offset;
-        self.end = offset;
+        self.end = offset + ch.len_utf8();
     }
 
     fn end(&mut self, offset: usize, ch: char) {
@@ -124,28 +124,8 @@ impl<'a> Segments<'a> {
         }
     }
 
-    fn next_index(&mut self) -> Option<(usize, char)> {
-        if let Some((offset, ch)) = self.indices.next() {
-            if ch == '\n' {
-                self.line += 1;
-                self.column = 0;
-                Some((offset, '\n'))
-            } else if ch == '\r' {
-                self.line += 1;
-                self.column = 0;
-                if let Some((_, '\n')) = self.indices.peek() {
-                    self.indices.next();
-                    Some((offset + 1, '\r'))
-                } else {
-                    Some((offset, '\r'))
-                }
-            } else {
-                self.column += 1;
-                Some((offset, ch))
-            }
-        } else {
-            None
-        }
+    fn next_nl(&mut self) -> bool {
+        matches!(self.indices.peek(), Some((_, '\n')))
     }
 }
 
@@ -153,7 +133,10 @@ impl Iterator for Segments<'_> {
     type Item = Result<Segment>;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let index = self.next_index();
+            let index = self.indices.next();
+            if index.is_some() {
+                self.column += 1;
+            }
             match self.state {
                 State::Start => match index {
                     Some((offset, ch)) => {
@@ -167,39 +150,51 @@ impl Iterator for Segments<'_> {
                     }
                     None => return Some(Err(DimlError::EmptyInput)),
                 },
-                State::LineStart => match index {
-                    Some((offset, ch)) => match ch {
-                        '\n' | '\r' => self.offsets.end(offset, ch),
-                        ch if Some(ch) == self.delimiter => {
-                            let segment = Segment::new(&self.offsets);
-                            self.state = State::NodeName;
-                            return Some(Ok(segment));
+                State::LineStart => {
+                    self.line += 1;
+                    self.column = 0;
+                    match index {
+                        Some((offset, ch)) => match ch {
+                            '\n' | '\r' => self.offsets.end(offset, ch),
+                            ch if Some(ch) == self.delimiter => {
+                                let segment = Segment::new(&self.offsets);
+                                self.state = State::NodeName;
+                                return Some(Ok(segment));
+                            }
+                            ch if ch.is_whitespace() => {
+                                /* append to indentation */
+                                self.state = State::Indentation;
+                            }
+                            _ => {
+                                /* append to content*/
+                                self.state = State::NodeContent;
+                            }
+                        },
+                        None => {
+                            self.state = State::End;
+                            return Some(Ok(Segment::new(&self.offsets)));
                         }
-                        ch if ch.is_whitespace() => {
-                            /* append to indentation */
-                            self.state = State::Indentation;
-                        }
-                        _ => {
-                            /* append to content*/
-                            self.state = State::NodeContent;
-                        }
-                    },
-                    None => {
-                        self.state = State::End;
-                        return Some(Ok(Segment::new(&self.offsets)));
                     }
-                },
+                }
                 State::NodeName => match index {
                     Some((offset, ch)) => match ch {
-                        '\n' | '\r' => {
-                            self.offsets.content(offset);
+                        '\r' => {
+                            self.offsets.content(offset, ch);
+                            if let Some((offset, '\n')) = self.indices.peek() {
+                                self.offsets.end(*offset, ch);
+                                self.indices.next();
+                            }
+                            self.state = State::LineStart
+                        }
+                        '\n' => {
+                            self.offsets.content(offset, ch);
                             self.state = State::LineStart
                         }
                         ch if ch.is_whitespace() => {
-                            self.offsets.content(offset);
+                            self.offsets.content(offset, ch);
                             self.state = State::NodeContent
                         }
-                        ch if !ch.is_control() => self.offsets.name(offset),
+                        ch if !ch.is_control() => self.offsets.name(offset, ch),
                         ch => {
                             return Some(Err(DimlError::UnexpectedCharacter(
                                 ch,
@@ -324,7 +319,18 @@ mod tests {
         for segment in Segments::new(input.char_indices().peekable()) {
             let segment = segment.unwrap();
             assert_eq!("", segment.name(input));
-            assert_eq!("", segment.content(input));
+            assert_eq!("\n", segment.content(input));
+        }
+    }
+
+    #[test]
+    fn _a0003() {
+        let input = ".\r\n";
+        for segment in Segments::new(input.char_indices().peekable()) {
+            let segment = segment.unwrap();
+            println!("{:?}", segment);
+            assert_eq!("", segment.name(input));
+            assert_eq!("\r\n", segment.content(input));
         }
     }
 
@@ -333,13 +339,14 @@ mod tests {
         let input = ".A\n";
         for segment in Segments::new(input.char_indices().peekable()) {
             let segment = segment.unwrap();
+            println!("{:?}", segment);
             assert_eq!("A", segment.name(input));
-            assert_eq!("", segment.content(input));
+            assert_eq!("\n", segment.content(input));
         }
     }
 
     #[test]
-    fn _a0003() {
+    fn _a0004() {
         let input = ".A a\n";
         for segment in Segments::new(input.char_indices().peekable()) {
             let segment = segment.unwrap();
