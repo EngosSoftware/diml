@@ -3,6 +3,10 @@ use crate::errors::Result;
 use std::iter::Peekable;
 use std::str::CharIndices;
 
+const CR: char = '\r';
+const LF: char = '\n';
+const SP: char = ' ';
+
 /// Parser state.
 #[derive(PartialEq, Eq)]
 enum State {
@@ -28,7 +32,7 @@ struct Span {
 
 #[derive(Default)]
 struct Offsets {
-    indentation: usize,
+    indent: usize,
     delimiter: usize,
     name: usize,
     content: usize,
@@ -36,12 +40,8 @@ struct Offsets {
 }
 
 impl Offsets {
-    fn indentation(&mut self, offset: usize, ch: char) {
-        self.indentation = offset;
-        self.delimiter = offset + ch.len_utf8();
-        self.name = self.delimiter;
-        self.content = self.name;
-        self.end = self.content;
+    fn indent(&mut self, indent: usize) {
+        self.indent = indent;
     }
 
     fn delimiter(&mut self, offset: usize, ch: char) {
@@ -69,7 +69,7 @@ impl Offsets {
 
 #[derive(Debug)]
 struct Segment {
-    indent: Span,
+    indent: usize,
     name: Span,
     content: Span,
 }
@@ -77,10 +77,7 @@ struct Segment {
 impl Segment {
     fn new(offsets: &Offsets) -> Self {
         Self {
-            indent: Span {
-                start: offsets.indentation,
-                end: offsets.delimiter,
-            },
+            indent: offsets.indent,
             name: Span {
                 start: offsets.name,
                 end: offsets.content,
@@ -92,8 +89,8 @@ impl Segment {
         }
     }
 
-    fn indent<'a>(&self, input: &'a str) -> &'a str {
-        &input[self.indent.start..self.indent.end]
+    fn indent(&self) -> usize {
+        self.indent
     }
 
     fn name<'a>(&self, input: &'a str) -> &'a str {
@@ -112,8 +109,7 @@ struct Segments<'a> {
     column: usize,
     delimiter: Option<char>,
     offsets: Offsets,
-    indent_start: usize,
-    indent_char: char,
+    indent: usize,
 }
 
 impl<'a> Segments<'a> {
@@ -126,8 +122,7 @@ impl<'a> Segments<'a> {
             column: 0,
             delimiter: None,
             offsets: Offsets::default(),
-            indent_start: 0,
-            indent_char: '\0',
+            indent: 0,
         }
     }
 }
@@ -156,24 +151,23 @@ impl Iterator for Segments<'_> {
                     self.column = 0;
                     match index {
                         Some((offset, ch)) => match ch {
-                            '\r' => {
+                            CR => {
                                 self.offsets.end(offset, ch);
-                                if let Some((offset, '\n')) = self.indices.peek() {
+                                if let Some((offset, LF)) = self.indices.peek() {
                                     self.offsets.end(*offset, ch);
                                     self.indices.next();
                                 }
                             }
-                            '\n' => self.offsets.end(offset, ch),
+                            LF => self.offsets.end(offset, ch),
+                            SP => {
+                                self.indent = 1;
+                                self.state = State::Indentation;
+                            }
                             ch if Some(ch) == self.delimiter => {
                                 let segment = Segment::new(&self.offsets);
                                 self.offsets.delimiter(offset, ch);
                                 self.state = State::NodeName;
                                 return Some(Ok(segment));
-                            }
-                            ch if ch.is_whitespace() => {
-                                self.indent_start = offset;
-                                self.indent_char = ch;
-                                self.state = State::Indentation;
                             }
                             _ => {
                                 self.offsets.end(offset, ch);
@@ -188,15 +182,15 @@ impl Iterator for Segments<'_> {
                 }
                 State::NodeName => match index {
                     Some((offset, ch)) => match ch {
-                        '\r' => {
+                        CR => {
                             self.offsets.content(offset, ch);
-                            if let Some((offset, '\n')) = self.indices.peek() {
+                            if let Some((offset, LF)) = self.indices.peek() {
                                 self.offsets.end(*offset, ch);
                                 self.indices.next();
                             }
                             self.state = State::LineStart
                         }
-                        '\n' => {
+                        LF => {
                             self.offsets.content(offset, ch);
                             self.state = State::LineStart
                         }
@@ -217,27 +211,26 @@ impl Iterator for Segments<'_> {
                 },
                 State::Indentation => match index {
                     Some((offset, ch)) => match ch {
-                        '\r' => {
+                        CR => {
                             self.offsets.end(offset, ch);
-                            if let Some((offset, '\n')) = self.indices.peek() {
+                            if let Some((offset, LF)) = self.indices.peek() {
                                 self.offsets.end(*offset, ch);
                                 self.indices.next();
                             }
                             self.state = State::LineStart
                         }
-                        '\n' => {
+                        LF => {
                             self.offsets.end(offset, ch);
                             self.state = State::LineStart;
                         }
+                        SP => self.indent += 1,
                         ch if Some(ch) == self.delimiter => {
                             let segment = Segment::new(&self.offsets);
-                            self.offsets
-                                .indentation(self.indent_start, self.indent_char);
+                            self.offsets.indent(std::mem::take(&mut self.indent));
                             self.offsets.delimiter(offset, ch);
                             self.state = State::NodeName;
                             return Some(Ok(segment));
                         }
-                        ch if ch.is_whitespace() => {}
                         _ => {
                             self.offsets.end(offset, ch);
                             self.state = State::NodeContent;
@@ -248,15 +241,15 @@ impl Iterator for Segments<'_> {
                 State::NodeContent => {
                     if let Some((offset, ch)) = index {
                         match ch {
-                            '\r' => {
+                            CR => {
                                 self.offsets.end(offset, ch);
-                                if let Some((offset, '\n')) = self.indices.peek() {
+                                if let Some((offset, LF)) = self.indices.peek() {
                                     self.offsets.end(*offset, ch);
                                     self.indices.next();
                                 }
                                 self.state = State::LineStart
                             }
-                            '\n' => {
+                            LF => {
                                 self.offsets.end(offset, ch);
                                 self.state = State::LineStart;
                             }
@@ -359,7 +352,7 @@ mod tests {
         let input = ".\n";
         for segment in Segments::new(input.char_indices().peekable()) {
             let segment = segment.unwrap();
-            assert_eq!("", segment.indent(input));
+            assert_eq!(0, segment.indent());
             assert_eq!("", segment.name(input));
             assert_eq!("\n", segment.content(input));
         }
@@ -456,10 +449,10 @@ mod tests {
             .collect::<Result<Vec<Segment>>>()
             .unwrap();
         assert_eq!(2, segments.len());
-        assert_eq!("", segments[0].indent(input));
+        assert_eq!(0, segments[0].indent());
         assert_eq!("A", segments[0].name(input));
         assert_eq!(" a\r", segments[0].content(input));
-        assert_eq!("  ", segments[1].indent(input));
+        assert_eq!(2, segments[1].indent());
         assert_eq!("B", segments[1].name(input));
         assert_eq!(" b\r", segments[1].content(input));
     }
