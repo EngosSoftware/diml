@@ -58,6 +58,16 @@ struct Strip {
     name: Span,
     /// Content.
     content: String,
+    /// Indentation start.
+    i: usize,
+    /// Delimiter position.
+    d: usize,
+    /// Name start.
+    n: usize,
+    /// Content start.
+    c: usize,
+    /// End of split.
+    e: usize,
 }
 
 /// Parses input.
@@ -81,6 +91,8 @@ pub fn parse(input: &str) -> Result<Node> {
             append_child(&mut stack);
         }
         //assert_eq!(strip.name, strip.name_span.text(input));
+        let _name = strip.name.text(input);
+
         stack.push((
             Node::new(strip.line, strip.name.text(input), strip.content),
             strip.level,
@@ -194,7 +206,7 @@ impl<'a> Strips<'a> {
                 self.column = 0;
                 if let Some((_, '\n')) = self.iterator.peek() {
                     self.iterator.next();
-                    Some((offset + 1, '\r', "\r\n"))
+                    Some((offset, '\r', "\r\n"))
                 } else {
                     Some((offset, '\r', "\r"))
                 }
@@ -215,7 +227,7 @@ impl Iterator for Strips<'_> {
             let anch = self.next_char();
             match self.state {
                 State::Start => match anch {
-                    Some((_, ch, _)) => {
+                    Some((offset, ch, _)) => {
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.delimiter = Some(ch);
                             self.strip.line = 1;
@@ -251,6 +263,7 @@ impl Iterator for Strips<'_> {
                 State::NodeName => match anch {
                     Some((offset, ch, le)) => {
                         if ch == '\n' || ch == '\r' {
+                            self.strip.c = offset;
                             self.strip.content.push_str(le);
                             self.state = State::LineStart;
                         } else if !ch.is_control() && !ch.is_whitespace() {
