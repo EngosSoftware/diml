@@ -58,7 +58,7 @@ struct Segments<'a> {
     /// Current column number, 0-based.
     column: usize,
     /// Recognized delimiter.
-    delimiter: Option<char>,
+    delimiter: char,
     /// Recognized indent.
     indent: usize,
     /// Recognized indent line.
@@ -79,7 +79,7 @@ impl<'a> Segments<'a> {
             state: State::Start,
             line: 1,
             column: 0,
-            delimiter: None,
+            delimiter: NULL,
             indent: 0,
             indent_line: 0,
             next_indent: 0,
@@ -144,7 +144,7 @@ impl Iterator for Segments<'_> {
                 State::Start => match index {
                     Some((offset, ch)) => {
                         if !ch.is_control() && !ch.is_whitespace() {
-                            self.delimiter = Some(ch);
+                            self.delimiter = ch;
                             self.delimiter(offset, ch);
                             self.state = State::NodeName;
                         } else {
@@ -165,7 +165,7 @@ impl Iterator for Segments<'_> {
                                 self.next_indent_line = self.line;
                                 self.state = State::Indentation;
                             }
-                            ch if Some(ch) == self.delimiter => {
+                            ch if ch == self.delimiter => {
                                 let segment = self.consume_segment();
                                 self.delimiter(offset, ch);
                                 self.state = State::NodeName;
@@ -218,7 +218,7 @@ impl Iterator for Segments<'_> {
                             self.state = State::LineStart;
                         }
                         SP => self.next_indent += 1,
-                        ch if Some(ch) == self.delimiter => {
+                        ch if ch == self.delimiter => {
                             let segment = self.consume_segment();
                             self.indent = self.next_indent;
                             self.indent_line = self.next_indent_line;
