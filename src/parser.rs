@@ -227,7 +227,7 @@ impl Iterator for Strips<'_> {
             let anch = self.next_char();
             match self.state {
                 State::Start => match anch {
-                    Some((offset, ch, _)) => {
+                    Some((_offset, ch, _)) => {
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.delimiter = Some(ch);
                             self.strip.line = 1;
