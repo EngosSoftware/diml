@@ -448,4 +448,19 @@ mod tests {
             assert_eq!(" a\r\r", segment.content(input));
         }
     }
+
+    #[test]
+    fn _a0008() {
+        let input = ".A a\r  .B b\r";
+        let segments = Segments::new(input.char_indices().peekable())
+            .collect::<Result<Vec<Segment>>>()
+            .unwrap();
+        assert_eq!(2, segments.len());
+        assert_eq!("", segments[0].indent(input));
+        assert_eq!("A", segments[0].name(input));
+        assert_eq!(" a\r", segments[0].content(input));
+        assert_eq!("  ", segments[1].indent(input));
+        assert_eq!("B", segments[1].name(input));
+        assert_eq!(" b\r", segments[1].content(input));
+    }
 }
