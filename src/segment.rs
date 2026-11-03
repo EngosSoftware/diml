@@ -132,6 +132,10 @@ impl<'a> Segments<'a> {
             offsets: Offsets::default(),
         }
     }
+
+    fn segment(&self) -> Segment {
+        Segment::new(self.indent, &self.offsets)
+    }
 }
 
 impl Iterator for Segments<'_> {
@@ -171,7 +175,7 @@ impl Iterator for Segments<'_> {
                                 self.state = State::Indentation;
                             }
                             ch if Some(ch) == self.delimiter => {
-                                let segment = Segment::new(self.indent, &self.offsets);
+                                let segment = self.segment();
                                 self.offsets.delimiter(offset, ch);
                                 self.state = State::NodeName;
                                 return Some(Ok(segment));
@@ -183,7 +187,7 @@ impl Iterator for Segments<'_> {
                         },
                         None => {
                             self.state = State::End;
-                            return Some(Ok(Segment::new(self.indent, &self.offsets)));
+                            return Some(Ok(self.segment()));
                         }
                     }
                 }
@@ -232,7 +236,7 @@ impl Iterator for Segments<'_> {
                         }
                         SP => self.next_indent += 1,
                         ch if Some(ch) == self.delimiter => {
-                            let segment = Segment::new(self.indent, &self.offsets);
+                            let segment = self.segment();
                             self.indent = std::mem::take(&mut self.next_indent);
                             self.offsets.delimiter(offset, ch);
                             self.state = State::NodeName;
