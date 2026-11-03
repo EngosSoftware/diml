@@ -6,6 +6,7 @@ use std::str::CharIndices;
 const CR: char = '\r';
 const LF: char = '\n';
 const SP: char = ' ';
+const NULL: char = '\0';
 
 /// Parser state.
 #[derive(PartialEq, Eq)]
@@ -102,22 +103,30 @@ impl Segment {
     }
 }
 
+/// Iterator over segments.
 struct Segments<'a> {
-    state: State,
+    /// Iterator over char indices.
     indices: Peekable<CharIndices<'a>>,
+    /// Parsing state.
+    state: State,
+    /// Current line number, 1-based.
     line: usize,
+    /// Current column number, 0-based.
     column: usize,
+    /// Recognized delimiter.
     delimiter: Option<char>,
-    offsets: Offsets,
+    /// Recognized indentation.
     indent: usize,
+    /// Recognized char offsets.
+    offsets: Offsets,
 }
 
 impl<'a> Segments<'a> {
     /// Creates an iterator over segments.
     fn new(indices: Peekable<CharIndices<'a>>) -> Self {
         Segments {
-            state: State::Start,
             indices,
+            state: State::Start,
             line: 1,
             column: 0,
             delimiter: None,

@@ -32,6 +32,11 @@
   .cov-html
     .desc Generates code coverage report in HTML format
     .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov clean
+    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov --no-cfg-coverage --html
+
+  .cov-html-open
+    .desc Generates code coverage report in HTML format
+    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov clean
     .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov --no-cfg-coverage --html --open
 
   .cov-badge

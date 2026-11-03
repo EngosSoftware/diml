@@ -7,7 +7,7 @@
 mod errors;
 mod node;
 mod parser;
-mod parser2;
+mod segment;
 
 pub use errors::{DimlError, Result};
 pub use node::Node;
