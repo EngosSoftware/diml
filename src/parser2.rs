@@ -93,6 +93,10 @@ impl Segment {
         }
     }
 
+    fn indent<'a>(&self, input: &'a str) -> &'a str {
+        &input[self.indent.start..self.indent.end]
+    }
+
     fn name<'a>(&self, input: &'a str) -> &'a str {
         &input[self.name.start..self.name.end]
     }
@@ -333,6 +337,7 @@ mod tests {
         let input = ".\n";
         for segment in Segments::new(input.char_indices().peekable()) {
             let segment = segment.unwrap();
+            assert_eq!("", segment.indent(input));
             assert_eq!("", segment.name(input));
             assert_eq!("\n", segment.content(input));
         }
