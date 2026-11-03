@@ -134,9 +134,7 @@ impl Iterator for Segments<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let index = self.indices.next();
-            if index.is_some() {
-                self.column += 1;
-            }
+            self.column += 1;
             match self.state {
                 State::Start => match index {
                     Some((offset, ch)) => {
@@ -324,7 +322,7 @@ mod tests {
     }
 
     #[test]
-    fn _a0003() {
+    fn _a0002() {
         let input = ".\r\n";
         for segment in Segments::new(input.char_indices().peekable()) {
             let segment = segment.unwrap();
@@ -335,7 +333,7 @@ mod tests {
     }
 
     #[test]
-    fn _a0002() {
+    fn _a0003() {
         let input = ".A\n";
         for segment in Segments::new(input.char_indices().peekable()) {
             let segment = segment.unwrap();
@@ -352,6 +350,26 @@ mod tests {
             let segment = segment.unwrap();
             assert_eq!("A", segment.name(input));
             assert_eq!(" a\n", segment.content(input));
+        }
+    }
+
+    #[test]
+    fn _a0005() {
+        let input = ".A a\r\n";
+        for segment in Segments::new(input.char_indices().peekable()) {
+            let segment = segment.unwrap();
+            assert_eq!("A", segment.name(input));
+            assert_eq!(" a\r\n", segment.content(input));
+        }
+    }
+
+    #[test]
+    fn _a0006() {
+        let input = ".A a\r";
+        for segment in Segments::new(input.char_indices().peekable()) {
+            let segment = segment.unwrap();
+            assert_eq!("A", segment.name(input));
+            assert_eq!(" a\r", segment.content(input));
         }
     }
 }
