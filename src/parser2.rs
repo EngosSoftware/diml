@@ -123,10 +123,6 @@ impl<'a> Segments<'a> {
             offsets: Offsets::new(0),
         }
     }
-
-    fn next_nl(&mut self) -> bool {
-        matches!(self.indices.peek(), Some((_, '\n')))
-    }
 }
 
 impl Iterator for Segments<'_> {
