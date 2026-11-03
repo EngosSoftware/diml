@@ -21,8 +21,81 @@ enum State {
 }
 
 #[derive(Debug)]
+struct Span {
+    start: usize,
+    end: usize,
+}
+
+struct Offsets {
+    indentation: usize,
+    delimiter: usize,
+    name: usize,
+    content: usize,
+    end: usize,
+}
+
+impl Offsets {
+    fn new(offset: usize) -> Self {
+        Self {
+            indentation: offset,
+            delimiter: offset,
+            name: offset,
+            content: offset,
+            end: offset,
+        }
+    }
+
+    fn delimiter(&mut self, offset: usize) {
+        self.delimiter = offset;
+        self.name = offset;
+        self.content = offset;
+        self.end = offset;
+    }
+
+    fn name(&mut self, offset: usize) {
+        self.name = offset;
+        self.content = offset;
+        self.end = offset;
+    }
+
+    fn content(&mut self, offset: usize) {
+        self.content = offset;
+        self.end = offset;
+    }
+}
+
+#[derive(Debug)]
 struct Segment {
-    //
+    indent: Span,
+    name: Span,
+    content: Span,
+}
+
+impl Segment {
+    fn new(offsets: &Offsets) -> Self {
+        Self {
+            indent: Span {
+                start: offsets.indentation,
+                end: offsets.delimiter,
+            },
+            name: Span {
+                start: offsets.name,
+                end: offsets.content,
+            },
+            content: Span {
+                start: offsets.content,
+                end: offsets.end,
+            },
+        }
+    }
+
+    fn name<'a>(&self, input: &'a str) -> &'a str {
+        &input[self.name.start..self.name.end]
+    }
+
+    fn content<'a>(&self, input: &'a str) -> &'a str {
+        &input[self.content.start..self.content.end]
+    }
 }
 
 struct Segments<'a> {
@@ -31,17 +104,19 @@ struct Segments<'a> {
     line: usize,
     column: usize,
     delimiter: Option<char>,
+    offsets: Offsets,
 }
 
 impl<'a> Segments<'a> {
     /// Creates an iterator over segments.
-    const fn new(indices: Peekable<CharIndices<'a>>) -> Self {
+    fn new(indices: Peekable<CharIndices<'a>>) -> Self {
         Segments {
             state: State::Start,
             indices,
             line: 1,
             column: 0,
             delimiter: None,
+            offsets: Offsets::new(0),
         }
     }
 
@@ -77,9 +152,10 @@ impl Iterator for Segments<'_> {
             let index = self.next_index();
             match self.state {
                 State::Start => match index {
-                    Some((_, ch)) => {
+                    Some((offset, ch)) => {
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.delimiter = Some(ch);
+                            self.offsets.delimiter(offset);
                             self.state = State::NodeName;
                         } else {
                             return Some(Err(DimlError::UnexpectedCharacter(ch, 1, 0)));
@@ -91,7 +167,7 @@ impl Iterator for Segments<'_> {
                     Some((_, ch)) => match ch {
                         '\n' | '\r' => { /* append to content */ }
                         ch if Some(ch) == self.delimiter => {
-                            let segment = Segment {};
+                            let segment = Segment::new(&self.offsets);
                             self.state = State::NodeName;
                             return Some(Ok(segment));
                         }
@@ -106,14 +182,20 @@ impl Iterator for Segments<'_> {
                     },
                     None => {
                         self.state = State::End;
-                        return Some(Ok(Segment {}));
+                        return Some(Ok(Segment::new(&self.offsets)));
                     }
                 },
                 State::NodeName => match index {
-                    Some((_, ch)) => match ch {
-                        '\n' | '\r' => self.state = State::LineStart,
-                        ch if ch.is_whitespace() => self.state = State::NodeContent,
-                        ch if !ch.is_control() => { /* append to name */ }
+                    Some((offset, ch)) => match ch {
+                        '\n' | '\r' => {
+                            self.offsets.content(offset);
+                            self.state = State::LineStart
+                        }
+                        ch if ch.is_whitespace() => {
+                            self.offsets.content(offset);
+                            self.state = State::NodeContent
+                        }
+                        ch if !ch.is_control() => self.offsets.name(offset),
                         ch => {
                             return Some(Err(DimlError::UnexpectedCharacter(
                                 ch,
@@ -131,7 +213,7 @@ impl Iterator for Segments<'_> {
                             self.state = State::LineStart;
                         }
                         ch if Some(ch) == self.delimiter => {
-                            let segment = Segment {};
+                            let segment = Segment::new(&self.offsets);
                             /* append to indentation */
                             self.state = State::NodeName;
                             return Some(Ok(segment));
@@ -236,7 +318,18 @@ mod tests {
     fn _a0001() {
         let input = ".\n";
         for segment in Segments::new(input.char_indices().peekable()) {
-            println!("{segment:?}");
+            let segment = segment.unwrap();
+            assert_eq!("", segment.name(input));
+        }
+    }
+
+    #[test]
+    fn _a0002() {
+        let input = ".A\n";
+        for segment in Segments::new(input.char_indices().peekable()) {
+            let segment = segment.unwrap();
+            assert_eq!("A", segment.name(input));
+            assert_eq!("", segment.content(input));
         }
     }
 }
