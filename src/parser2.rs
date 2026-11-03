@@ -26,6 +26,7 @@ struct Span {
     end: usize,
 }
 
+#[derive(Default)]
 struct Offsets {
     indentation: usize,
     delimiter: usize,
@@ -35,14 +36,12 @@ struct Offsets {
 }
 
 impl Offsets {
-    fn new(offset: usize) -> Self {
-        Self {
-            indentation: offset,
-            delimiter: offset,
-            name: offset,
-            content: offset,
-            end: offset,
-        }
+    fn indentation(&mut self, offset: usize, ch: char) {
+        self.indentation = offset;
+        self.delimiter = offset + ch.len_utf8();
+        self.name = self.delimiter;
+        self.content = self.name;
+        self.end = self.content;
     }
 
     fn delimiter(&mut self, offset: usize, ch: char) {
@@ -113,6 +112,8 @@ struct Segments<'a> {
     column: usize,
     delimiter: Option<char>,
     offsets: Offsets,
+    indent_start: usize,
+    indent_char: char,
 }
 
 impl<'a> Segments<'a> {
@@ -124,7 +125,9 @@ impl<'a> Segments<'a> {
             line: 1,
             column: 0,
             delimiter: None,
-            offsets: Offsets::new(0),
+            offsets: Offsets::default(),
+            indent_start: 0,
+            indent_char: '\0',
         }
     }
 }
@@ -153,18 +156,27 @@ impl Iterator for Segments<'_> {
                     self.column = 0;
                     match index {
                         Some((offset, ch)) => match ch {
-                            '\n' | '\r' => self.offsets.end(offset, ch),
+                            '\r' => {
+                                self.offsets.end(offset, ch);
+                                if let Some((offset, '\n')) = self.indices.peek() {
+                                    self.offsets.end(*offset, ch);
+                                    self.indices.next();
+                                }
+                            }
+                            '\n' => self.offsets.end(offset, ch),
                             ch if Some(ch) == self.delimiter => {
                                 let segment = Segment::new(&self.offsets);
+                                self.offsets.delimiter(offset, ch);
                                 self.state = State::NodeName;
                                 return Some(Ok(segment));
                             }
                             ch if ch.is_whitespace() => {
-                                /* append to indentation */
+                                self.indent_start = offset;
+                                self.indent_char = ch;
                                 self.state = State::Indentation;
                             }
                             _ => {
-                                /* append to content*/
+                                self.offsets.end(offset, ch);
                                 self.state = State::NodeContent;
                             }
                         },
@@ -204,20 +216,30 @@ impl Iterator for Segments<'_> {
                     None => return Some(Err(DimlError::MissingNewline)),
                 },
                 State::Indentation => match index {
-                    Some((_, ch)) => match ch {
-                        '\n' | '\r' => {
-                            /* append to content */
+                    Some((offset, ch)) => match ch {
+                        '\r' => {
+                            self.offsets.end(offset, ch);
+                            if let Some((offset, '\n')) = self.indices.peek() {
+                                self.offsets.end(*offset, ch);
+                                self.indices.next();
+                            }
+                            self.state = State::LineStart
+                        }
+                        '\n' => {
+                            self.offsets.end(offset, ch);
                             self.state = State::LineStart;
                         }
                         ch if Some(ch) == self.delimiter => {
                             let segment = Segment::new(&self.offsets);
-                            /* append to indentation */
+                            self.offsets
+                                .indentation(self.indent_start, self.indent_char);
+                            self.offsets.delimiter(offset, ch);
                             self.state = State::NodeName;
                             return Some(Ok(segment));
                         }
-                        ch if ch.is_whitespace() => { /* append to indentation */ }
+                        ch if ch.is_whitespace() => {}
                         _ => {
-                            /* append to content */
+                            self.offsets.end(offset, ch);
                             self.state = State::NodeContent;
                         }
                     },
@@ -414,6 +436,16 @@ mod tests {
             let segment = segment.unwrap();
             assert_eq!("A", segment.name(input));
             assert_eq!(" a\r", segment.content(input));
+        }
+    }
+
+    #[test]
+    fn _a0007() {
+        let input = ".A a\r\r";
+        for segment in Segments::new(input.char_indices().peekable()) {
+            let segment = segment.unwrap();
+            assert_eq!("A", segment.name(input));
+            assert_eq!(" a\r\r", segment.content(input));
         }
     }
 }
