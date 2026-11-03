@@ -35,7 +35,7 @@ struct Segments<'a> {
 
 impl<'a> Segments<'a> {
     /// Creates an iterator over segments.
-    fn new(indices: Peekable<CharIndices<'a>>) -> Segments<'a> {
+    const fn new(indices: Peekable<CharIndices<'a>>) -> Self {
         Segments {
             state: State::Start,
             indices,
@@ -87,10 +87,77 @@ impl Iterator for Segments<'_> {
                     }
                     None => return Some(Err(DimlError::EmptyInput)),
                 },
-                State::NodeName => match index {
-                    _ => return None,
+                State::LineStart => match index {
+                    Some((_, ch)) => match ch {
+                        '\n' | '\r' => { /* append to content */ }
+                        ch if Some(ch) == self.delimiter => {
+                            let segment = Segment {};
+                            self.state = State::NodeName;
+                            return Some(Ok(segment));
+                        }
+                        ch if ch.is_whitespace() => {
+                            /* append to indentation */
+                            self.state = State::Indentation;
+                        }
+                        _ => {
+                            /* append to content*/
+                            self.state = State::NodeContent;
+                        }
+                    },
+                    None => {
+                        self.state = State::End;
+                        return Some(Ok(Segment {}));
+                    }
                 },
-                _ => return None,
+                State::NodeName => match index {
+                    Some((_, ch)) => match ch {
+                        '\n' | '\r' => self.state = State::LineStart,
+                        ch if ch.is_whitespace() => self.state = State::NodeContent,
+                        ch if !ch.is_control() => { /* append to name */ }
+                        ch => {
+                            return Some(Err(DimlError::UnexpectedCharacter(
+                                ch,
+                                self.line,
+                                self.column,
+                            )));
+                        }
+                    },
+                    None => return Some(Err(DimlError::MissingNewline)),
+                },
+                State::Indentation => match index {
+                    Some((_, ch)) => match ch {
+                        '\n' | '\r' => {
+                            /* append to content */
+                            self.state = State::LineStart;
+                        }
+                        ch if Some(ch) == self.delimiter => {
+                            let segment = Segment {};
+                            /* append to indentation */
+                            self.state = State::NodeName;
+                            return Some(Ok(segment));
+                        }
+                        ch if ch.is_whitespace() => { /* append to indentation */ }
+                        _ => {
+                            /* append to content */
+                            self.state = State::NodeContent;
+                        }
+                    },
+                    None => return Some(Err(DimlError::MissingNewline)),
+                },
+                State::NodeContent => {
+                    if let Some((_, ch)) = index {
+                        match ch {
+                            '\n' | '\r' => {
+                                /* append to content */
+                                self.state = State::LineStart;
+                            }
+                            _ => { /* append to content */ }
+                        }
+                    } else {
+                        return Some(Err(DimlError::MissingNewline));
+                    }
+                }
+                State::End => return None,
             }
         }
     }
@@ -141,9 +208,35 @@ mod tests {
 
     #[test]
     fn _0004() {
+        let input = ".A";
+        assert_eq!(
+            "missing newline at the end of input",
+            Segments::new(input.char_indices().peekable())
+                .next()
+                .unwrap()
+                .unwrap_err()
+                .to_string()
+        );
+    }
+
+    #[test]
+    fn _0005() {
+        let input = ".A\u{0}";
+        assert_eq!(
+            "unexpected character '\\0' at line 1, column 3",
+            Segments::new(input.char_indices().peekable())
+                .next()
+                .unwrap()
+                .unwrap_err()
+                .to_string()
+        );
+    }
+
+    #[test]
+    fn _a0001() {
         let input = ".\n";
         for segment in Segments::new(input.char_indices().peekable()) {
-            println!("{:?}", segment);
+            println!("{segment:?}");
         }
     }
 }
