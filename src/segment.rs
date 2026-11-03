@@ -25,11 +25,12 @@ enum State {
     End,
 }
 
+/// Recognized segment.
 #[derive(Debug)]
 struct Segment {
     indent: usize,
-    name: (usize, usize),
-    content: (usize, usize),
+    name_offset: (usize, usize),
+    content_offset: (usize, usize),
 }
 
 impl Segment {
@@ -38,11 +39,11 @@ impl Segment {
     }
 
     fn name<'a>(&self, input: &'a str) -> &'a str {
-        &input[self.name.0..self.name.1]
+        &input[self.name_offset.0..self.name_offset.1]
     }
 
     fn content<'a>(&self, input: &'a str) -> &'a str {
-        &input[self.content.0..self.content.1]
+        &input[self.content_offset.0..self.content_offset.1]
     }
 }
 
@@ -60,8 +61,12 @@ struct Segments<'a> {
     delimiter: Option<char>,
     /// Recognized indent.
     indent: usize,
+    /// Recognized indent line.
+    indent_line: usize,
     /// Look-ahead indent.
     next_indent: usize,
+    /// Look-ahead indent line.
+    next_indent_line: usize,
     /// Recognized char offsets.
     offsets: (usize, usize, usize, usize),
 }
@@ -76,7 +81,9 @@ impl<'a> Segments<'a> {
             column: 0,
             delimiter: None,
             indent: 0,
+            indent_line: 0,
             next_indent: 0,
+            next_indent_line: 0,
             offsets: (0, 0, 0, 0),
         }
     }
@@ -84,8 +91,8 @@ impl<'a> Segments<'a> {
     fn consume_segment(&self) -> Segment {
         Segment {
             indent: self.indent,
-            name: (self.offsets.1, self.offsets.2),
-            content: (self.offsets.2, self.offsets.3),
+            name_offset: (self.offsets.1, self.offsets.2),
+            content_offset: (self.offsets.2, self.offsets.3),
         }
     }
 
@@ -155,6 +162,7 @@ impl Iterator for Segments<'_> {
                             LF => self.consume_lf(offset),
                             SP => {
                                 self.next_indent = 1;
+                                self.next_indent_line = self.line;
                                 self.state = State::Indentation;
                             }
                             ch if Some(ch) == self.delimiter => {
@@ -212,7 +220,8 @@ impl Iterator for Segments<'_> {
                         SP => self.next_indent += 1,
                         ch if Some(ch) == self.delimiter => {
                             let segment = self.consume_segment();
-                            self.indent = std::mem::take(&mut self.next_indent);
+                            self.indent = self.next_indent;
+                            self.indent_line = self.next_indent_line;
                             self.delimiter(offset, ch);
                             self.state = State::NodeName;
                             return Some(Ok(segment));
