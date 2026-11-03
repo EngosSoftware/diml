@@ -71,20 +71,6 @@ struct Segment {
 }
 
 impl Segment {
-    fn new(indent: usize, offsets: &Offsets) -> Self {
-        Self {
-            indent,
-            name: Span {
-                start: offsets.name,
-                end: offsets.content,
-            },
-            content: Span {
-                start: offsets.content,
-                end: offsets.end,
-            },
-        }
-    }
-
     fn indent(&self) -> usize {
         self.indent
     }
@@ -133,8 +119,19 @@ impl<'a> Segments<'a> {
         }
     }
 
+    /// Creates a new segment.
     fn segment(&self) -> Segment {
-        Segment::new(self.indent, &self.offsets)
+        Segment {
+            indent: self.indent,
+            name: Span {
+                start: self.offsets.name,
+                end: self.offsets.content,
+            },
+            content: Span {
+                start: self.offsets.content,
+                end: self.offsets.end,
+            },
+        }
     }
 }
 
