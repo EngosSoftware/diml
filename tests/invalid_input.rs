@@ -170,28 +170,8 @@ fn _0015() {
     );
 }
 
-// #[test]
-// fn _0016() {
-//     // Unexpected character in indentation (only spaces are allowed in indentation).
-//     let input = ".A\n  .B\n \t.C\n  .D\n";
-//     assert_eq!(
-//         r"unexpected character '\u{a0}' at line 3, column 1",
-//         parse(input).unwrap_err().to_string()
-//     );
-// }
-//
-// #[test]
-// fn _0017() {
-//     // Unexpected character in indentation (only spaces are allowed in indentation).
-//     let input = ".A\n  .B\n \t.C\n  .D\n";
-//     assert_eq!(
-//         r"unexpected character '\t' at line 3, column 2",
-//         parse(input).unwrap_err().to_string()
-//     );
-// }
-
 #[test]
-fn _0018() {
+fn _0016() {
     // Skipped indentation level when nesting.
     let input = ".A\n  .B\n      .C\n";
     assert_eq!(
@@ -201,7 +181,7 @@ fn _0018() {
 }
 
 #[test]
-fn _0019() {
+fn _0017() {
     // Skipped indentation level after continuation in a lower level.
     let input = ".A\n  .B\n.C\n    .D\n";
     assert_eq!(
@@ -211,7 +191,7 @@ fn _0019() {
 }
 
 #[test]
-fn _0021() {
+fn _0018() {
     // No newline after the content of the last node.
     let input = ".A\n  .B content";
     assert_eq!(
@@ -221,7 +201,7 @@ fn _0021() {
 }
 
 #[test]
-fn _0022() {
+fn _0019() {
     // No newline after the last node, with CRLF line endings.
     let input = ".A\r\n.B";
     assert_eq!(
@@ -231,7 +211,7 @@ fn _0022() {
 }
 
 #[test]
-fn _0023() {
+fn _0020() {
     // No control character is allowed inside a node name.
     let input = ".A\u{7f}BC abc\n";
     assert_eq!(
