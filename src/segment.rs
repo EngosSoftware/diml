@@ -136,10 +136,12 @@ impl<'a> Segments<'a> {
             self.indices.next();
             self.mark_end(offset, LF);
         }
+        self.state = State::LineStart;
     }
 
     const fn consume_lf(&mut self, offset: usize) {
         self.mark_end(offset, LF);
+        self.state = State::LineStart;
     }
 
     const fn mark_delimiter(&mut self, offset: usize, ch: char) {
@@ -173,7 +175,6 @@ impl<'a> Segments<'a> {
 
 impl Iterator for Segments<'_> {
     type Item = Result<Segment>;
-    #[expect(clippy::too_many_lines)]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if self.finished {
@@ -221,12 +222,10 @@ impl Iterator for Segments<'_> {
                         CR => {
                             self.mark_content(offset, ch);
                             self.consume_cr(offset);
-                            self.state = State::LineStart;
                         }
                         LF => {
                             self.mark_content(offset, ch);
                             self.consume_lf(offset);
-                            self.state = State::LineStart;
                         }
                         ch if ch.is_whitespace() => {
                             self.mark_content(offset, ch);
@@ -236,14 +235,8 @@ impl Iterator for Segments<'_> {
                         ch => return self.err_unexpected_character(ch).into(),
                     },
                     State::Indentation => match ch {
-                        CR => {
-                            self.consume_cr(offset);
-                            self.state = State::LineStart;
-                        }
-                        LF => {
-                            self.consume_lf(offset);
-                            self.state = State::LineStart;
-                        }
+                        CR => self.consume_cr(offset),
+                        LF => self.consume_lf(offset),
                         SP => self.next_indent += 1,
                         ch if ch == self.delimiter => {
                             return match self.consume_segment() {
@@ -263,14 +256,8 @@ impl Iterator for Segments<'_> {
                         }
                     },
                     State::NodeContent => match ch {
-                        CR => {
-                            self.consume_cr(offset);
-                            self.state = State::LineStart;
-                        }
-                        LF => {
-                            self.consume_lf(offset);
-                            self.state = State::LineStart;
-                        }
+                        CR => self.consume_cr(offset),
+                        LF => self.consume_lf(offset),
                         _ => self.mark_end(offset, ch),
                     },
                 }
