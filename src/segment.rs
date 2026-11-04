@@ -172,6 +172,7 @@ impl<'a> Segments<'a> {
 
 impl Iterator for Segments<'_> {
     type Item = Result<Segment>;
+    #[expect(clippy::too_many_lines)]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let index = self.indices.next();
@@ -202,16 +203,12 @@ impl Iterator for Segments<'_> {
                                 self.state = State::Indentation;
                             }
                             ch if ch == self.delimiter => {
-                                return match self.consume_segment() {
-                                    Ok(segment) => {
-                                        self.indent = 0;
-                                        self.indent_line = self.line;
-                                        self.mark_delimiter(offset, ch);
-                                        self.state = State::NodeName;
-                                        Some(Ok(segment))
-                                    }
-                                    err => Some(err),
-                                };
+                                let segment = self.consume_segment().unwrap(); // safe
+                                self.indent = 0;
+                                self.indent_line = self.line;
+                                self.mark_delimiter(offset, ch);
+                                self.state = State::NodeName;
+                                return Some(Ok(segment));
                             }
                             _ => {
                                 self.mark_end(offset, ch);

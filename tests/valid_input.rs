@@ -137,6 +137,36 @@ fn _0013() {
 
 #[test]
 fn _0014() {
+    let input = ".A\n  \n";
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
+    assert_eq!("A", node.name());
+    assert_eq!("\n  \n", node.content());
+}
+
+#[test]
+fn _0015() {
+    let input = ".A\n  \r";
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
+    assert_eq!("A", node.name());
+    assert_eq!("\n  \r", node.content());
+}
+
+#[test]
+fn _0016() {
+    let input = ".A\n  \r\n";
+    let doc = parse(input).unwrap();
+    assert_eq!(1, doc.children().count());
+    let node = doc.children().next().unwrap();
+    assert_eq!("A", node.name());
+    assert_eq!("\n  \r\n", node.content());
+}
+
+#[test]
+fn _0017() {
     let input = "😀_this_is-some_funny-name\n";
     let doc = parse(input).unwrap();
     assert_eq!(1, doc.children().count());
@@ -146,7 +176,7 @@ fn _0014() {
 }
 
 #[test]
-fn _0015() {
+fn _0018() {
     let input = ">z\n";
     let doc = parse(input).unwrap();
     assert_eq!(1, doc.children().count());
@@ -156,7 +186,7 @@ fn _0015() {
 }
 
 #[test]
-fn _0016() {
+fn _0019() {
     let input = ".A1\n";
     let doc = parse(input).unwrap();
     assert_eq!(1, doc.children().count());
@@ -166,7 +196,7 @@ fn _0016() {
 }
 
 #[test]
-fn _0017() {
+fn _0020() {
     let input = ".A\n.k\n";
     let doc = parse(input).unwrap();
     let mut children = doc.children();
@@ -180,7 +210,7 @@ fn _0017() {
 }
 
 #[test]
-fn _0018() {
+fn _0021() {
     let input = "$x\n$_\n";
     let doc = parse(input).unwrap();
     let mut children = doc.children();
@@ -194,7 +224,7 @@ fn _0018() {
 }
 
 #[test]
-fn _0019() {
+fn _0022() {
     let input = "*n\n    *_\n";
     let doc = parse(input).unwrap();
     let mut children = doc.children();
@@ -208,7 +238,7 @@ fn _0019() {
 }
 
 #[test]
-fn _0020() {
+fn _0023() {
     let input = ".A\n$B\n";
     let doc = parse(input).unwrap();
     let mut children = doc.children();
@@ -219,7 +249,7 @@ fn _0020() {
 }
 
 #[test]
-fn _0021() {
+fn _0024() {
     let input = r".A
 
   some content
@@ -242,7 +272,7 @@ fn _0021() {
 }
 
 #[test]
-fn _0022() {
+fn _0025() {
     let input = r"
 .A a
   .B b
@@ -263,7 +293,7 @@ fn _0022() {
 }
 
 #[test]
-fn _0023() {
+fn _0026() {
     // Control characters are allowed in the content.
     let input = ".A ab\u{7f}cd\n";
     let doc = parse(input).unwrap();
