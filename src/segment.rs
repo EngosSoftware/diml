@@ -29,8 +29,8 @@ enum State {
 #[derive(Debug)]
 struct Segment {
     indent: usize,
-    name_offset: (usize, usize),
-    content_offset: (usize, usize),
+    name_markers: (usize, usize),
+    content_markers: (usize, usize),
 }
 
 impl Segment {
@@ -39,11 +39,11 @@ impl Segment {
     }
 
     fn name<'a>(&self, input: &'a str) -> &'a str {
-        &input[self.name_offset.0..self.name_offset.1]
+        &input[self.name_markers.0..self.name_markers.1]
     }
 
     fn content<'a>(&self, input: &'a str) -> &'a str {
-        &input[self.content_offset.0..self.content_offset.1]
+        &input[self.content_markers.0..self.content_markers.1]
     }
 }
 
@@ -67,8 +67,9 @@ struct Segments<'a> {
     next_indent: usize,
     /// Look-ahead indent line.
     next_indent_line: usize,
-    /// Recognized char offsets.
-    offsets: (usize, usize, usize, usize),
+    /// Recognized byte offset markers
+    /// (delimiter, name, content, end of segment).
+    markers: (usize, usize, usize, usize),
 }
 
 impl<'a> Segments<'a> {
@@ -84,50 +85,50 @@ impl<'a> Segments<'a> {
             indent_line: 0,
             next_indent: 0,
             next_indent_line: 0,
-            offsets: (0, 0, 0, 0),
+            markers: (0, 0, 0, 0),
         }
     }
 
     fn consume_segment(&self) -> Segment {
         Segment {
             indent: self.indent,
-            name_offset: (self.offsets.1, self.offsets.2),
-            content_offset: (self.offsets.2, self.offsets.3),
+            name_markers: (self.markers.1, self.markers.2),
+            content_markers: (self.markers.2, self.markers.3),
         }
     }
 
     fn consume_cr(&mut self, offset: usize) {
-        self.end(offset, CR);
+        self.mark_end(offset, CR);
         if let Some((offset, LF)) = self.indices.peek().cloned() {
             self.indices.next();
-            self.end(offset, LF);
+            self.mark_end(offset, LF);
         };
     }
 
     fn consume_lf(&mut self, offset: usize) {
-        self.end(offset, LF);
+        self.mark_end(offset, LF);
     }
 
-    fn delimiter(&mut self, offset: usize, ch: char) {
-        self.offsets.0 = offset;
-        self.offsets.1 = offset + ch.len_utf8();
-        self.offsets.2 = self.offsets.1;
-        self.offsets.3 = self.offsets.2;
+    fn mark_delimiter(&mut self, offset: usize, ch: char) {
+        self.markers.0 = offset;
+        self.markers.1 = offset + ch.len_utf8();
+        self.markers.2 = self.markers.1;
+        self.markers.3 = self.markers.2;
     }
 
-    fn name(&mut self, offset: usize, ch: char) {
-        self.offsets.1 = offset;
-        self.offsets.2 = offset + ch.len_utf8();
-        self.offsets.3 = self.offsets.2;
+    fn mark_name(&mut self, offset: usize, ch: char) {
+        self.markers.1 = offset;
+        self.markers.2 = offset + ch.len_utf8();
+        self.markers.3 = self.markers.2;
     }
 
-    fn content(&mut self, offset: usize, ch: char) {
-        self.offsets.2 = offset;
-        self.offsets.3 = offset + ch.len_utf8();
+    fn mark_content(&mut self, offset: usize, ch: char) {
+        self.markers.2 = offset;
+        self.markers.3 = offset + ch.len_utf8();
     }
 
-    fn end(&mut self, offset: usize, ch: char) {
-        self.offsets.3 = offset + ch.len_utf8();
+    fn mark_end(&mut self, offset: usize, ch: char) {
+        self.markers.3 = offset + ch.len_utf8();
     }
 }
 
@@ -142,7 +143,7 @@ impl Iterator for Segments<'_> {
                     Some((offset, ch)) => {
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.delimiter = ch;
-                            self.delimiter(offset, ch);
+                            self.mark_delimiter(offset, ch);
                             self.state = State::NodeName;
                         } else {
                             return Some(Err(DimlError::UnexpectedCharacter(ch, 1, 0)));
@@ -164,12 +165,12 @@ impl Iterator for Segments<'_> {
                             }
                             ch if ch == self.delimiter => {
                                 let segment = self.consume_segment();
-                                self.delimiter(offset, ch);
+                                self.mark_delimiter(offset, ch);
                                 self.state = State::NodeName;
                                 return Some(Ok(segment));
                             }
                             _ => {
-                                self.end(offset, ch);
+                                self.mark_end(offset, ch);
                                 self.state = State::NodeContent;
                             }
                         },
@@ -190,10 +191,10 @@ impl Iterator for Segments<'_> {
                             self.state = State::LineStart
                         }
                         ch if ch.is_whitespace() => {
-                            self.content(offset, ch);
+                            self.mark_content(offset, ch);
                             self.state = State::NodeContent
                         }
-                        ch if !ch.is_control() => self.name(offset, ch),
+                        ch if !ch.is_control() => self.mark_name(offset, ch),
                         ch => {
                             return Some(Err(DimlError::UnexpectedCharacter(
                                 ch,
@@ -219,12 +220,12 @@ impl Iterator for Segments<'_> {
                             let segment = self.consume_segment();
                             self.indent = self.next_indent;
                             self.indent_line = self.next_indent_line;
-                            self.delimiter(offset, ch);
+                            self.mark_delimiter(offset, ch);
                             self.state = State::NodeName;
                             return Some(Ok(segment));
                         }
                         _ => {
-                            self.end(offset, ch);
+                            self.mark_end(offset, ch);
                             self.state = State::NodeContent;
                         }
                     },
@@ -241,7 +242,7 @@ impl Iterator for Segments<'_> {
                                 self.consume_lf(offset);
                                 self.state = State::LineStart;
                             }
-                            _ => self.end(offset, ch),
+                            _ => self.mark_end(offset, ch),
                         }
                     } else {
                         return Some(Err(DimlError::MissingNewline));
