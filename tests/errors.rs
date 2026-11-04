@@ -3,7 +3,7 @@ use std::error::Error;
 
 /// Utility function that parses provided input,
 /// propagating the error with `?` operator into a boxed [Error].
-fn parse_boxed(input: &str) -> Result<Node, Box<dyn Error>> {
+fn parse_boxed(input: &str) -> Result<Node<'_>, Box<dyn Error>> {
     Ok(parse(input)?)
 }
 

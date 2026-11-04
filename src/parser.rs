@@ -13,12 +13,12 @@ use crate::segment::Segments;
 /// # Panics
 ///
 /// Unwraps are safe, no panics.
-pub fn parse(input: &str) -> Result<Node> {
+pub fn parse(input: &str) -> Result<Node<'_>> {
     fn append_child(stack: &mut Vec<(Node, usize)>) {
         let (child, _) = stack.pop().unwrap();
         stack.last_mut().unwrap().0.add_child(child);
     }
-    let mut stack = vec![(Node::new(0, String::new(), String::new()), 0)];
+    let mut stack = vec![(Node::new(0, "", ""), 0)];
     for segment in Segments::new(input.char_indices().peekable()) {
         let segment = segment?;
         while stack
@@ -28,11 +28,7 @@ pub fn parse(input: &str) -> Result<Node> {
             append_child(&mut stack);
         }
         stack.push((
-            Node::new(
-                segment.line(),
-                segment.name(input).to_string(),
-                segment.content(input).to_string(),
-            ),
+            Node::new(segment.line(), segment.name(input), segment.content(input)),
             segment.level() + 1,
         ));
     }

@@ -46,7 +46,8 @@ const C: &str = ".C\n";
 const D: &str = ".D d\n";
 
 fn eq(node1: &str, node2: &str, name1: &str, content1: &str, name2: &str, content2: &str) {
-    let doc = parse(&format!("{node1}{node2}")).unwrap();
+    let input = format!("{node1}{node2}");
+    let doc = parse(&input).unwrap();
     let mut children = doc.children();
     let first = children.next().unwrap();
     assert_eq!(name1, first.name());

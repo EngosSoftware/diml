@@ -2,20 +2,20 @@
 
 /// Tree node.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Node {
+pub struct Node<'a> {
     /// Line number where the node starts.
     line: usize,
     /// Node name.
-    name: String,
+    name: &'a str,
     /// Node content.
-    content: String,
+    content: &'a str,
     /// Child nodes.
     children: Vec<Self>,
 }
 
-impl Node {
+impl<'a> Node<'a> {
     /// Creates a new node.
-    pub(crate) const fn new(line: usize, name: String, content: String) -> Self {
+    pub(crate) const fn new(line: usize, name: &'a str, content: &'a str) -> Self {
         Self {
             line,
             name,
@@ -32,14 +32,14 @@ impl Node {
 
     /// Returns the node name.
     #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
+    pub const fn name(&self) -> &str {
+        self.name
     }
 
     /// Returns the node content.
     #[must_use]
-    pub fn content(&self) -> &str {
-        &self.content
+    pub const fn content(&self) -> &str {
+        self.content
     }
 
     /// Adds a child node at the end of the children list.
@@ -73,10 +73,10 @@ impl Node {
     }
 
     /// Returns an iterator over child nodes that have any of the specified names.
-    pub fn with_names<'a>(
-        &'a self,
-        names: &'a [impl AsRef<str>],
-    ) -> impl Iterator<Item = &'a Self> {
+    pub fn with_names<'b>(
+        &'b self,
+        names: &'b [impl AsRef<str>],
+    ) -> impl Iterator<Item = &'b Self> {
         self.children
             .iter()
             .filter(|node| names.iter().any(|name| name.as_ref() == node.name))
@@ -90,10 +90,10 @@ impl Node {
     }
 
     /// Returns an iterator over child nodes, excluding those with any of the specified names.
-    pub fn excluding_names<'a>(
-        &'a self,
-        names: &'a [impl AsRef<str>],
-    ) -> impl Iterator<Item = &'a Self> {
+    pub fn excluding_names<'b>(
+        &'b self,
+        names: &'b [impl AsRef<str>],
+    ) -> impl Iterator<Item = &'b Self> {
         self.children
             .iter()
             .filter(|node| !names.iter().any(|name| name.as_ref() == node.name))
