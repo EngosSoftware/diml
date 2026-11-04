@@ -157,6 +157,22 @@ impl<'a> Segments<'a> {
     fn mark_end(&mut self, offset: usize, ch: char) {
         self.markers.3 = offset + ch.len_utf8();
     }
+
+    fn err_unexpected_character(&self, ch: char) -> Option<Result<Segment>> {
+        Some(Err(DimlError::UnexpectedCharacter(
+            ch,
+            self.line,
+            self.column,
+        )))
+    }
+
+    fn err_empty_input(&self) -> Option<Result<Segment>> {
+        Some(Err(DimlError::EmptyInput))
+    }
+
+    fn err_missing_newline(&self) -> Option<Result<Segment>> {
+        Some(Err(DimlError::MissingNewline))
+    }
 }
 
 impl Iterator for Segments<'_> {
@@ -173,14 +189,10 @@ impl Iterator for Segments<'_> {
                             self.mark_delimiter(offset, ch);
                             self.state = State::NodeName;
                         } else {
-                            return Some(Err(DimlError::UnexpectedCharacter(
-                                ch,
-                                self.line,
-                                self.column,
-                            )));
+                            return self.err_unexpected_character(ch);
                         }
                     }
-                    None => return Some(Err(DimlError::EmptyInput)),
+                    None => return self.err_empty_input(),
                 },
                 State::LineStart => {
                     self.line += 1;
@@ -232,13 +244,7 @@ impl Iterator for Segments<'_> {
                             self.state = State::NodeContent
                         }
                         ch if !ch.is_control() => self.mark_name(offset, ch),
-                        ch => {
-                            return Some(Err(DimlError::UnexpectedCharacter(
-                                ch,
-                                self.line,
-                                self.column,
-                            )));
-                        }
+                        ch => return self.err_unexpected_character(ch),
                     },
                     None => return Some(Err(DimlError::MissingNewline)),
                 },
@@ -270,7 +276,7 @@ impl Iterator for Segments<'_> {
                             self.state = State::NodeContent;
                         }
                     },
-                    None => return Some(Err(DimlError::MissingNewline)),
+                    None => return self.err_missing_newline(),
                 },
                 State::NodeContent => {
                     if let Some((offset, ch)) = index {
@@ -286,7 +292,7 @@ impl Iterator for Segments<'_> {
                             _ => self.mark_end(offset, ch),
                         }
                     } else {
-                        return Some(Err(DimlError::MissingNewline));
+                        return self.err_missing_newline();
                     }
                 }
                 State::End => return None,
