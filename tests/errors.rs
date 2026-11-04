@@ -10,7 +10,7 @@ fn parse_boxed(input: &str) -> Result<Node, Box<dyn Error>> {
 #[test]
 fn failing_parsing_propagation_works() {
     let err = parse_boxed("").unwrap_err();
-    assert_eq!("empty input", err.to_string());
+    assert_eq!("empty input at line 1, column 1", err.to_string());
     assert!(err.source().is_none());
 }
 

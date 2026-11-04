@@ -21,8 +21,6 @@ pub fn parse(input: &str) -> Result<Node> {
     let mut stack = vec![(Node::new(0, String::new(), String::new()), 0)];
     for segment in Segments::new(input.char_indices().peekable()) {
         let segment = segment?;
-        println!("name = {}", segment.name(input));
-        println!("content = {}", segment.content(input));
         let segment_level = segment.level() + 1;
         while stack
             .last()

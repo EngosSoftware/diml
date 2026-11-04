@@ -11,7 +11,12 @@ pub type Result<T, E = DimlError> = std::result::Result<T, E>;
 #[non_exhaustive]
 pub enum DimlError {
     /// Reports an empty input.
-    EmptyInput,
+    EmptyInput(
+        /// Line number.
+        usize,
+        /// Column number.
+        usize,
+    ),
     /// Reports an unexpected character encountered on input.
     UnexpectedCharacter(
         /// Unexpected character.
@@ -22,7 +27,12 @@ pub enum DimlError {
         usize,
     ),
     /// Reports a missing newline at the end of input.
-    MissingNewline,
+    MissingNewline(
+        /// Line number.
+        usize,
+        /// Column number.
+        usize,
+    ),
     /// Reports invalid indentation.
     InvalidIndentation(
         /// Length of the invalid indent.
@@ -51,8 +61,8 @@ impl Display for DimlError {
     /// Implements [Display] trait for [`DimlError`].
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::EmptyInput => {
-                write!(f, "empty input")
+            Self::EmptyInput(line, column) => {
+                write!(f, "empty input at line {line}, column {column}")
             }
             Self::UnexpectedCharacter(ch, line, column) => {
                 write!(
@@ -61,8 +71,8 @@ impl Display for DimlError {
                     ch.escape_debug()
                 )
             }
-            Self::MissingNewline => {
-                write!(f, "missing newline at the end of input")
+            Self::MissingNewline(line, column) => {
+                write!(f, "missing newline at line {line}, column {column}")
             }
             Self::InvalidIndentation(indent, multiplier, line, column) => {
                 write!(

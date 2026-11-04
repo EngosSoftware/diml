@@ -55,7 +55,7 @@ pub struct Segments<'a> {
     state: State,
     /// Current line number, 1-based.
     line: usize,
-    /// Current column number, 0-based.
+    /// Current column number, 1-based.
     column: usize,
     /// Recognized delimiter.
     delimiter: char,
@@ -157,11 +157,11 @@ impl<'a> Segments<'a> {
     }
 
     const fn err_empty_input(&self) -> Result<Segment> {
-        Err(DimlError::EmptyInput)
+        Err(DimlError::EmptyInput(self.line, self.column))
     }
 
     const fn err_missing_newline(&self) -> Result<Segment> {
-        Err(DimlError::MissingNewline)
+        Err(DimlError::MissingNewline(self.line, self.column))
     }
 }
 
@@ -186,7 +186,7 @@ impl Iterator for Segments<'_> {
                 },
                 State::LineStart => {
                     self.line += 1;
-                    self.column = 0;
+                    self.column = 1;
                     match index {
                         Some((offset, ch)) => match ch {
                             CR => self.consume_cr(offset),
@@ -215,7 +215,7 @@ impl Iterator for Segments<'_> {
                         },
                         None => {
                             self.state = State::End;
-                            return Some(self.consume_segment());
+                            return self.consume_segment().into();
                         }
                     }
                 }
@@ -238,7 +238,7 @@ impl Iterator for Segments<'_> {
                         ch if !ch.is_control() => self.mark_content(offset, ch),
                         ch => return self.err_unexpected_character(ch).into(),
                     },
-                    None => return Some(Err(DimlError::MissingNewline)),
+                    None => return self.err_missing_newline().into(),
                 },
                 State::Indentation => match index {
                     Some((offset, ch)) => match ch {
@@ -292,230 +292,3 @@ impl Iterator for Segments<'_> {
         }
     }
 }
-
-/*
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn _0001() {
-        let input = "";
-        assert_eq!(
-            "empty input",
-            Segments::new(input.char_indices().peekable())
-                .next()
-                .unwrap()
-                .unwrap_err()
-                .to_string()
-        );
-    }
-
-    #[test]
-    fn _0002() {
-        let input = "\n";
-        assert_eq!(
-            "unexpected character '\\n' at line 1, column 1",
-            Segments::new(input.char_indices().peekable())
-                .next()
-                .unwrap()
-                .unwrap_err()
-                .to_string()
-        );
-    }
-
-    #[test]
-    fn _0003() {
-        let input = " ";
-        assert_eq!(
-            "unexpected character ' ' at line 1, column 1",
-            Segments::new(input.char_indices().peekable())
-                .next()
-                .unwrap()
-                .unwrap_err()
-                .to_string()
-        );
-    }
-
-    #[test]
-    fn _0004() {
-        let input = ".A";
-        assert_eq!(
-            "missing newline at the end of input",
-            Segments::new(input.char_indices().peekable())
-                .next()
-                .unwrap()
-                .unwrap_err()
-                .to_string()
-        );
-    }
-
-    #[test]
-    fn _0005() {
-        let input = ".A\u{0}";
-        assert_eq!(
-            "unexpected character '\\0' at line 1, column 3",
-            Segments::new(input.char_indices().peekable())
-                .next()
-                .unwrap()
-                .unwrap_err()
-                .to_string()
-        );
-    }
-
-    #[test]
-    fn _0006() {
-        let input = ".A a";
-        assert_eq!(
-            "missing newline at the end of input",
-            Segments::new(input.char_indices().peekable())
-                .next()
-                .unwrap()
-                .unwrap_err()
-                .to_string()
-        );
-    }
-
-    #[test]
-    fn _0007() {
-        let input = ".A\n  .B\n   .C\n";
-        assert_eq!(
-            "invalid indentation 3, expected a multiple of 2 spaces at line 3, column 4",
-            Segments::new(input.char_indices().peekable())
-                .collect::<Result<Vec<Segment>>>()
-                .unwrap_err()
-                .to_string()
-        );
-    }
-
-    #[test]
-    fn _0008() {
-        let input = ".A\n  .B\n      .C\n";
-        assert_eq!(
-            "skipped indentation level, jump from level 1 to level 3 at line 3, column 7",
-            Segments::new(input.char_indices().peekable())
-                .collect::<Result<Vec<Segment>>>()
-                .unwrap_err()
-                .to_string()
-        );
-    }
-
-    #[test]
-    fn _0009() {
-        let input = ".A\n  .B\n.C\n    .D\n";
-        assert_eq!(
-            "skipped indentation level, jump from level 0 to level 2 at line 4, column 5",
-            Segments::new(input.char_indices().peekable())
-                .collect::<Result<Vec<Segment>>>()
-                .unwrap_err()
-                .to_string()
-        );
-    }
-
-    #[test]
-    fn _a0001() {
-        let input = ".\n";
-        for segment in Segments::new(input.char_indices().peekable()) {
-            let segment = segment.unwrap();
-            assert_eq!(0, segment.level());
-            assert_eq!("", segment.name(input));
-            assert_eq!("\n", segment.content(input));
-        }
-    }
-
-    #[test]
-    fn _a0002() {
-        let input = ".\r\n";
-        for segment in Segments::new(input.char_indices().peekable()) {
-            let segment = segment.unwrap();
-            assert_eq!("", segment.name(input));
-            assert_eq!("\r\n", segment.content(input));
-        }
-    }
-
-    #[test]
-    fn _a0003() {
-        let input = ".A\n";
-        for segment in Segments::new(input.char_indices().peekable()) {
-            let segment = segment.unwrap();
-            assert_eq!("A", segment.name(input));
-            assert_eq!("\n", segment.content(input));
-        }
-    }
-
-    #[test]
-    fn _a0003_1() {
-        let input = ".A\r";
-        for segment in Segments::new(input.char_indices().peekable()) {
-            let segment = segment.unwrap();
-            assert_eq!("A", segment.name(input));
-            assert_eq!("\r", segment.content(input));
-        }
-    }
-
-    #[test]
-    fn _a0003_2() {
-        let input = ".A\r\n";
-        for segment in Segments::new(input.char_indices().peekable()) {
-            let segment = segment.unwrap();
-            assert_eq!("A", segment.name(input));
-            assert_eq!("\r\n", segment.content(input));
-        }
-    }
-
-    #[test]
-    fn _a0004() {
-        let input = ".A a\n";
-        for segment in Segments::new(input.char_indices().peekable()) {
-            let segment = segment.unwrap();
-            assert_eq!("A", segment.name(input));
-            assert_eq!(" a\n", segment.content(input));
-        }
-    }
-
-    #[test]
-    fn _a0005() {
-        let input = ".A a\r\n";
-        for segment in Segments::new(input.char_indices().peekable()) {
-            let segment = segment.unwrap();
-            assert_eq!("A", segment.name(input));
-            assert_eq!(" a\r\n", segment.content(input));
-        }
-    }
-
-    #[test]
-    fn _a0006() {
-        let input = ".A a\r";
-        for segment in Segments::new(input.char_indices().peekable()) {
-            let segment = segment.unwrap();
-            assert_eq!("A", segment.name(input));
-            assert_eq!(" a\r", segment.content(input));
-        }
-    }
-
-    #[test]
-    fn _a0007() {
-        let input = ".A a\r\r";
-        for segment in Segments::new(input.char_indices().peekable()) {
-            let segment = segment.unwrap();
-            assert_eq!("A", segment.name(input));
-            assert_eq!(" a\r\r", segment.content(input));
-        }
-    }
-
-    #[test]
-    fn _a0008() {
-        let input = ".A a\r  .B b\r";
-        let segments = Segments::new(input.char_indices().peekable())
-            .collect::<Result<Vec<Segment>>>()
-            .unwrap();
-        assert_eq!(2, segments.len());
-        assert_eq!(0, segments[0].level());
-        assert_eq!("A", segments[0].name(input));
-        assert_eq!(" a\r", segments[0].content(input));
-        assert_eq!(1, segments[1].level());
-        assert_eq!("B", segments[1].name(input));
-        assert_eq!(" b\r", segments[1].content(input));
-    }
-}
-*/
