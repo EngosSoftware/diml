@@ -59,14 +59,16 @@ struct Segments<'a> {
     column: usize,
     /// Recognized delimiter.
     delimiter: char,
-    /// Recognized indent.
+    /// Recognized indent width, number of spaces.
     indent: usize,
-    /// Recognized indent line.
+    /// Recognized indent line, 1-based.
     indent_line: usize,
-    /// Look-ahead indent.
+    /// Look-ahead indent width, number of spaces.
     next_indent: usize,
-    /// Look-ahead indent line.
+    /// Look-ahead indent line, 1-based.
     next_indent_line: usize,
+    /// Number of spaces in the first recognized indentation.
+    multiplier: usize,
     /// Recognized byte offset markers for:
     /// delimiter, name, content, end of segment.
     markers: (usize, usize, usize, usize),
@@ -85,16 +87,20 @@ impl<'a> Segments<'a> {
             indent_line: 1,
             next_indent: 0,
             next_indent_line: 1,
+            multiplier: 0,
             markers: (0, 0, 0, 0),
         }
     }
 
-    fn consume_segment(&self) -> Segment {
-        Segment {
+    fn consume_segment(&mut self) -> Result<Segment> {
+        if self.multiplier == 0 && self.indent > 0 {
+            self.multiplier = self.indent;
+        }
+        Ok(Segment {
             indent: self.indent,
             name: (self.markers.1, self.markers.2),
             content: (self.markers.2, self.markers.3),
-        }
+        })
     }
 
     fn consume_cr(&mut self, offset: usize) {
@@ -168,10 +174,14 @@ impl Iterator for Segments<'_> {
                                 self.state = State::Indentation;
                             }
                             ch if ch == self.delimiter => {
-                                let segment = self.consume_segment();
-                                self.mark_delimiter(offset, ch);
-                                self.state = State::NodeName;
-                                return Some(Ok(segment));
+                                return match self.consume_segment() {
+                                    Ok(segment) => {
+                                        self.mark_delimiter(offset, ch);
+                                        self.state = State::NodeName;
+                                        Some(Ok(segment))
+                                    }
+                                    err => Some(err),
+                                };
                             }
                             _ => {
                                 self.mark_end(offset, ch);
@@ -180,7 +190,7 @@ impl Iterator for Segments<'_> {
                         },
                         None => {
                             self.state = State::End;
-                            return Some(Ok(self.consume_segment()));
+                            return Some(self.consume_segment());
                         }
                     }
                 }
@@ -221,12 +231,16 @@ impl Iterator for Segments<'_> {
                         }
                         SP => self.next_indent += 1,
                         ch if ch == self.delimiter => {
-                            let segment = self.consume_segment();
-                            self.indent = self.next_indent;
-                            self.indent_line = self.next_indent_line;
-                            self.mark_delimiter(offset, ch);
-                            self.state = State::NodeName;
-                            return Some(Ok(segment));
+                            return match self.consume_segment() {
+                                Ok(segment) => {
+                                    self.indent = self.next_indent;
+                                    self.indent_line = self.next_indent_line;
+                                    self.mark_delimiter(offset, ch);
+                                    self.state = State::NodeName;
+                                    Some(Ok(segment))
+                                }
+                                err => Some(err),
+                            };
                         }
                         _ => {
                             self.mark_end(offset, ch);
