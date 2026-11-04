@@ -302,3 +302,19 @@ fn _0026() {
     assert_eq!("A", node.name());
     assert_eq!(" ab\u{7f}cd\n", node.content());
 }
+
+#[test]
+fn _0027() {
+    // Node name and content should live longer than a doc and node.
+    let input = ".A ab\n";
+    let name;
+    let content;
+    {
+        let doc = parse(input).unwrap();
+        let node = doc.children().next().unwrap();
+        name = node.name();
+        content = node.content();
+    }
+    assert_eq!("A", name);
+    assert_eq!(" ab\n", content);
+}

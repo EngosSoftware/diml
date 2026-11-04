@@ -32,13 +32,13 @@ impl<'a> Node<'a> {
 
     /// Returns the node name.
     #[must_use]
-    pub const fn name(&self) -> &str {
+    pub const fn name(&self) -> &'a str {
         self.name
     }
 
     /// Returns the node content.
     #[must_use]
-    pub const fn content(&self) -> &str {
+    pub const fn content(&self) -> &'a str {
         self.content
     }
 
