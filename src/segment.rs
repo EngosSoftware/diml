@@ -97,14 +97,11 @@ impl<'a> Segments<'a> {
     }
 
     fn consume_cr(&mut self, offset: usize) {
-        let mut end_offset = offset;
-        let mut end_char = CR;
-        if let Some((offset, LF)) = self.indices.peek() {
-            end_offset = *offset;
-            end_char = LF;
+        self.end(offset, CR);
+        if let Some((offset, LF)) = self.indices.peek().cloned() {
             self.indices.next();
-        }
-        self.end(end_offset, end_char);
+            self.end(offset, LF);
+        };
     }
 
     fn consume_lf(&mut self, offset: usize) {
