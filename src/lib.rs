@@ -1,8 +1,9 @@
-#![doc = include_str!("../docs/README.md")]
 #![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(rustdoc::missing_crate_level_docs)]
 #![forbid(unsafe_code)]
+
+//! DIML parser
 
 mod errors;
 mod node;

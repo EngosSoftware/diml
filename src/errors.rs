@@ -6,7 +6,7 @@ use std::fmt::Display;
 /// Result type for [`DimlError`].
 pub type Result<T, E = DimlError> = std::result::Result<T, E>;
 
-/// Errors definition.
+/// Error definitions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DimlError {
@@ -17,16 +17,16 @@ pub enum DimlError {
         /// Column number.
         usize,
     ),
-    /// Reports an unexpected character encountered on input.
+    /// Reports an unexpected character.
     UnexpectedCharacter(
-        /// Unexpected character.
+        /// Encountered character.
         char,
         /// Line number.
         usize,
         /// Column number.
         usize,
     ),
-    /// Reports a missing newline at the end of input.
+    /// Reports a missing newline.
     MissingNewline(
         /// Line number.
         usize,
