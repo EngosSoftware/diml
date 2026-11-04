@@ -20,6 +20,3 @@ include = [
     "NOTICE",
     "/README.md"
 ]
-
-[dependencies]
-anch = "0.1.0"
