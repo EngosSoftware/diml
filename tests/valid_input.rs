@@ -23,7 +23,9 @@ fn _0002() {
 
 #[test]
 fn _0003() {
-    let inputs = ["-\n", "-\r", "-\r\n", "- \n"];
+    let inputs = [
+        "-\n", "- \n", "-\r", "- \r", "-\r\n", "- \r\n", "-\r\r", "- \r\r",
+    ];
     for input in inputs {
         let doc = parse(input).unwrap();
         assert_eq!(1, doc.children().count());
