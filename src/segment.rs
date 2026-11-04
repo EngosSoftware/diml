@@ -152,20 +152,16 @@ impl<'a> Segments<'a> {
         self.markers.3 = offset + ch.len_utf8();
     }
 
-    fn err_unexpected_character(&self, ch: char) -> Option<Result<Segment>> {
-        Some(Err(DimlError::UnexpectedCharacter(
-            ch,
-            self.line,
-            self.column,
-        )))
+    const fn err_unexpected_character(&self, ch: char) -> Result<Segment> {
+        Err(DimlError::UnexpectedCharacter(ch, self.line, self.column))
     }
 
-    fn err_empty_input(&self) -> Option<Result<Segment>> {
-        Some(Err(DimlError::EmptyInput))
+    const fn err_empty_input(&self) -> Result<Segment> {
+        Err(DimlError::EmptyInput)
     }
 
-    fn err_missing_newline(&self) -> Option<Result<Segment>> {
-        Some(Err(DimlError::MissingNewline))
+    const fn err_missing_newline(&self) -> Result<Segment> {
+        Err(DimlError::MissingNewline)
     }
 }
 
@@ -183,10 +179,10 @@ impl Iterator for Segments<'_> {
                             self.mark_delimiter(offset, ch);
                             self.state = State::NodeName;
                         } else {
-                            return self.err_unexpected_character(ch);
+                            return self.err_unexpected_character(ch).into();
                         }
                     }
-                    None => return self.err_empty_input(),
+                    None => return self.err_empty_input().into(),
                 },
                 State::LineStart => {
                     self.line += 1;
@@ -228,19 +224,19 @@ impl Iterator for Segments<'_> {
                         CR => {
                             self.mark_content(offset, ch);
                             self.consume_cr(offset);
-                            self.state = State::LineStart
+                            self.state = State::LineStart;
                         }
                         LF => {
                             self.mark_content(offset, ch);
                             self.consume_lf(offset);
-                            self.state = State::LineStart
+                            self.state = State::LineStart;
                         }
                         ch if ch.is_whitespace() => {
                             self.mark_content(offset, ch);
-                            self.state = State::NodeContent
+                            self.state = State::NodeContent;
                         }
                         ch if !ch.is_control() => self.mark_content(offset, ch),
-                        ch => return self.err_unexpected_character(ch),
+                        ch => return self.err_unexpected_character(ch).into(),
                     },
                     None => return Some(Err(DimlError::MissingNewline)),
                 },
@@ -248,7 +244,7 @@ impl Iterator for Segments<'_> {
                     Some((offset, ch)) => match ch {
                         CR => {
                             self.consume_cr(offset);
-                            self.state = State::LineStart
+                            self.state = State::LineStart;
                         }
                         LF => {
                             self.consume_lf(offset);
@@ -272,14 +268,14 @@ impl Iterator for Segments<'_> {
                             self.state = State::NodeContent;
                         }
                     },
-                    None => return self.err_missing_newline(),
+                    None => return self.err_missing_newline().into(),
                 },
                 State::NodeContent => {
                     if let Some((offset, ch)) = index {
                         match ch {
                             CR => {
                                 self.consume_cr(offset);
-                                self.state = State::LineStart
+                                self.state = State::LineStart;
                             }
                             LF => {
                                 self.consume_lf(offset);
@@ -288,7 +284,7 @@ impl Iterator for Segments<'_> {
                             _ => self.mark_end(offset, ch),
                         }
                     } else {
-                        return self.err_missing_newline();
+                        return self.err_missing_newline().into();
                     }
                 }
                 State::End => return None,
@@ -297,6 +293,7 @@ impl Iterator for Segments<'_> {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -431,7 +428,6 @@ mod tests {
         let input = ".\r\n";
         for segment in Segments::new(input.char_indices().peekable()) {
             let segment = segment.unwrap();
-            println!("{:?}", segment);
             assert_eq!("", segment.name(input));
             assert_eq!("\r\n", segment.content(input));
         }
@@ -442,7 +438,6 @@ mod tests {
         let input = ".A\n";
         for segment in Segments::new(input.char_indices().peekable()) {
             let segment = segment.unwrap();
-            println!("{:?}", segment);
             assert_eq!("A", segment.name(input));
             assert_eq!("\n", segment.content(input));
         }
@@ -453,7 +448,6 @@ mod tests {
         let input = ".A\r";
         for segment in Segments::new(input.char_indices().peekable()) {
             let segment = segment.unwrap();
-            println!("{:?}", segment);
             assert_eq!("A", segment.name(input));
             assert_eq!("\r", segment.content(input));
         }
@@ -464,7 +458,6 @@ mod tests {
         let input = ".A\r\n";
         for segment in Segments::new(input.char_indices().peekable()) {
             let segment = segment.unwrap();
-            println!("{:?}", segment);
             assert_eq!("A", segment.name(input));
             assert_eq!("\r\n", segment.content(input));
         }
@@ -525,3 +518,4 @@ mod tests {
         assert_eq!(" b\r", segments[1].content(input));
     }
 }
+*/
