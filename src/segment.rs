@@ -9,7 +9,6 @@ const SP: char = ' ';
 const NULL: char = '\0';
 
 /// Parser state.
-#[derive(PartialEq, Eq)]
 enum State {
     /// Starting parsing.
     Start,
@@ -24,7 +23,6 @@ enum State {
 }
 
 /// Recognized segment.
-#[derive(Debug)]
 pub struct Segment {
     line: usize,
     level: usize,
