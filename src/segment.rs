@@ -73,9 +73,8 @@ pub struct Segments<'a> {
     multiplier: usize,
     /// Last recognized level.
     level: usize,
-    /// Recognized byte offset markers for:
-    /// delimiter, name, content, end of segment.
-    markers: (usize, usize, usize, usize),
+    /// Recognized byte offset markers for (name, content, end).
+    markers: (usize, usize, usize),
     /// Flag indicating if parsing is finished.
     finished: bool,
 }
@@ -95,7 +94,7 @@ impl<'a> Segments<'a> {
             next_indent_line: 1,
             multiplier: 0,
             level: 0,
-            markers: (0, 0, 0, 0),
+            markers: (0, 0, 0),
             finished: false,
         }
     }
@@ -125,8 +124,8 @@ impl<'a> Segments<'a> {
         Ok(Segment {
             line: self.indent_line,
             level,
-            name: (self.markers.1, self.markers.2),
-            content: (self.markers.2, self.markers.3),
+            name: (self.markers.0, self.markers.1),
+            content: (self.markers.1, self.markers.2),
         })
     }
 
@@ -141,20 +140,19 @@ impl<'a> Segments<'a> {
         self.state = State::LineStart;
     }
 
-    const fn mark_delimiter(&mut self, offset: usize, ch: char) {
-        self.markers.0 = offset;
-        self.markers.1 = offset + ch.len_utf8();
+    const fn mark_name(&mut self, offset: usize, ch: char) {
+        self.markers.0 = offset + ch.len_utf8();
+        self.markers.1 = self.markers.0;
         self.markers.2 = self.markers.1;
-        self.markers.3 = self.markers.2;
     }
 
     const fn mark_content(&mut self, offset: usize, ch: char) {
-        self.markers.2 = offset;
-        self.markers.3 = offset + ch.len_utf8();
+        self.markers.1 = offset;
+        self.markers.2 = offset + ch.len_utf8();
     }
 
     const fn mark_end(&mut self, offset: usize, ch: char) {
-        self.markers.3 = offset + ch.len_utf8();
+        self.markers.2 = offset + ch.len_utf8();
     }
 
     const fn err_unexpected_character(&self, ch: char) -> Result<Segment> {
@@ -173,10 +171,10 @@ impl<'a> Segments<'a> {
 impl Iterator for Segments<'_> {
     type Item = Result<Segment>;
     fn next(&mut self) -> Option<Self::Item> {
+        if self.finished {
+            return None;
+        }
         loop {
-            if self.finished {
-                return None;
-            }
             let index = self.indices.next();
             self.column += 1;
             if let Some((offset, ch)) = index {
@@ -184,7 +182,7 @@ impl Iterator for Segments<'_> {
                     State::Start => {
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.delimiter = ch;
-                            self.mark_delimiter(offset, ch);
+                            self.mark_name(offset, ch);
                             self.state = State::NodeName;
                         } else {
                             return self.err_unexpected_character(ch).into();
@@ -205,7 +203,7 @@ impl Iterator for Segments<'_> {
                                     Ok(segment) => {
                                         self.indent = 0;
                                         self.indent_line = self.line;
-                                        self.mark_delimiter(offset, ch);
+                                        self.mark_name(offset, ch);
                                         self.state = State::NodeName;
                                         Ok(segment).into()
                                     }
@@ -238,7 +236,7 @@ impl Iterator for Segments<'_> {
                                 Ok(segment) => {
                                     self.indent = self.next_indent;
                                     self.indent_line = self.next_indent_line;
-                                    self.mark_delimiter(offset, ch);
+                                    self.mark_name(offset, ch);
                                     self.state = State::NodeName;
                                     Some(Ok(segment))
                                 }
