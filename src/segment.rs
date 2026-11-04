@@ -34,7 +34,7 @@ pub struct Segment {
 }
 
 impl Segment {
-    pub fn level(&self) -> usize {
+    pub const fn level(&self) -> usize {
         self.level
     }
 
@@ -78,7 +78,7 @@ pub struct Segments<'a> {
 
 impl<'a> Segments<'a> {
     /// Creates an iterator over segments.
-    pub fn new(indices: Peekable<CharIndices<'a>>) -> Self {
+    pub const fn new(indices: Peekable<CharIndices<'a>>) -> Self {
         Segments {
             indices,
             state: State::Start,
@@ -126,29 +126,29 @@ impl<'a> Segments<'a> {
 
     fn consume_cr(&mut self, offset: usize) {
         self.mark_end(offset, CR);
-        if let Some((offset, LF)) = self.indices.peek().cloned() {
+        if let Some((offset, LF)) = self.indices.peek().copied() {
             self.indices.next();
             self.mark_end(offset, LF);
-        };
+        }
     }
 
-    fn consume_lf(&mut self, offset: usize) {
+    const fn consume_lf(&mut self, offset: usize) {
         self.mark_end(offset, LF);
     }
 
-    fn mark_delimiter(&mut self, offset: usize, ch: char) {
+    const fn mark_delimiter(&mut self, offset: usize, ch: char) {
         self.markers.0 = offset;
         self.markers.1 = offset + ch.len_utf8();
         self.markers.2 = self.markers.1;
         self.markers.3 = self.markers.2;
     }
 
-    fn mark_content(&mut self, offset: usize, ch: char) {
+    const fn mark_content(&mut self, offset: usize, ch: char) {
         self.markers.2 = offset;
         self.markers.3 = offset + ch.len_utf8();
     }
 
-    fn mark_end(&mut self, offset: usize, ch: char) {
+    const fn mark_end(&mut self, offset: usize, ch: char) {
         self.markers.3 = offset + ch.len_utf8();
     }
 
