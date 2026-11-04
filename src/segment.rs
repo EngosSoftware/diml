@@ -27,28 +27,28 @@ enum State {
 
 /// Recognized segment.
 #[derive(Debug)]
-struct Segment {
+pub struct Segment {
     level: usize,
     name: (usize, usize),
     content: (usize, usize),
 }
 
 impl Segment {
-    fn level(&self) -> usize {
+    pub fn level(&self) -> usize {
         self.level
     }
 
-    fn name<'a>(&self, input: &'a str) -> &'a str {
+    pub fn name<'a>(&self, input: &'a str) -> &'a str {
         &input[self.name.0..self.name.1]
     }
 
-    fn content<'a>(&self, input: &'a str) -> &'a str {
+    pub fn content<'a>(&self, input: &'a str) -> &'a str {
         &input[self.content.0..self.content.1]
     }
 }
 
 /// Iterator over segments.
-struct Segments<'a> {
+pub struct Segments<'a> {
     /// Iterator over char indices.
     indices: Peekable<CharIndices<'a>>,
     /// Parsing state.
@@ -78,7 +78,7 @@ struct Segments<'a> {
 
 impl<'a> Segments<'a> {
     /// Creates an iterator over segments.
-    fn new(indices: Peekable<CharIndices<'a>>) -> Self {
+    pub fn new(indices: Peekable<CharIndices<'a>>) -> Self {
         Segments {
             indices,
             state: State::Start,
@@ -140,12 +140,6 @@ impl<'a> Segments<'a> {
         self.markers.0 = offset;
         self.markers.1 = offset + ch.len_utf8();
         self.markers.2 = self.markers.1;
-        self.markers.3 = self.markers.2;
-    }
-
-    fn mark_name(&mut self, offset: usize, ch: char) {
-        self.markers.1 = offset;
-        self.markers.2 = offset + ch.len_utf8();
         self.markers.3 = self.markers.2;
     }
 
@@ -232,10 +226,12 @@ impl Iterator for Segments<'_> {
                 State::NodeName => match index {
                     Some((offset, ch)) => match ch {
                         CR => {
+                            self.mark_content(offset, ch);
                             self.consume_cr(offset);
                             self.state = State::LineStart
                         }
                         LF => {
+                            self.mark_content(offset, ch);
                             self.consume_lf(offset);
                             self.state = State::LineStart
                         }
@@ -243,7 +239,7 @@ impl Iterator for Segments<'_> {
                             self.mark_content(offset, ch);
                             self.state = State::NodeContent
                         }
-                        ch if !ch.is_control() => self.mark_name(offset, ch),
+                        ch if !ch.is_control() => self.mark_content(offset, ch),
                         ch => return self.err_unexpected_character(ch),
                     },
                     None => return Some(Err(DimlError::MissingNewline)),

@@ -1,6 +1,7 @@
 //! # Parser implementation
 
 use crate::errors::Result;
+use crate::segment::Segments;
 use crate::{DimlError, Node};
 use std::iter::Peekable;
 use std::str::CharIndices;
@@ -85,17 +86,24 @@ pub fn parse(input: &str) -> Result<Node> {
         stack.last_mut().unwrap().0.add_child(child);
     }
     let mut stack = vec![(Node::new(0, String::new(), String::new()), 0)];
-    for strip in LeveledStrips::new(Strips::new(input.char_indices().peekable())) {
-        let strip = strip?;
-        while stack.last().is_some_and(|(_, level)| *level >= strip.level) {
+    for segment in Segments::new(input.char_indices().peekable()) {
+        let segment = segment?;
+        println!("name = {}", segment.name(input));
+        println!("content = {}", segment.content(input));
+        let segment_level = segment.level() + 1;
+        while stack
+            .last()
+            .is_some_and(|(_, level)| *level >= segment_level)
+        {
             append_child(&mut stack);
         }
-        //assert_eq!(strip.name, strip.name_span.text(input));
-        let _name = strip.name.text(input);
-
         stack.push((
-            Node::new(strip.line, strip.name.text(input), strip.content),
-            strip.level,
+            Node::new(
+                1,
+                segment.name(input).to_string(),
+                segment.content(input).to_string(),
+            ),
+            segment_level,
         ));
     }
     while stack.len() > 1 {
