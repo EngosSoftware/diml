@@ -6,7 +6,7 @@ fn _0001() {
     let input = "";
     assert_eq!(
         "empty input at line 1, column 1",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -15,15 +15,15 @@ fn _0002() {
     // Input beginning with a newline is invalid.
     assert_eq!(
         "unexpected character '\\n' at line 1, column 1",
-        parse("\n").unwrap_err().to_string()
+        parse("\n").err().unwrap().to_string()
     );
     assert_eq!(
         "unexpected character '\\r' at line 1, column 1",
-        parse("\r\n").unwrap_err().to_string()
+        parse("\r\n").err().unwrap().to_string()
     );
     assert_eq!(
         "unexpected character '\\r' at line 1, column 1",
-        parse("\r").unwrap_err().to_string()
+        parse("\r").err().unwrap().to_string()
     );
 }
 
@@ -33,7 +33,7 @@ fn _0003() {
     let input = " ";
     assert_eq!(
         "unexpected character ' ' at line 1, column 1",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -43,7 +43,7 @@ fn _0004() {
     let input = "\t";
     assert_eq!(
         r"unexpected character '\t' at line 1, column 1",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -53,7 +53,7 @@ fn _0005() {
     let input = "\u{7f}";
     assert_eq!(
         r"unexpected character '\u{7f}' at line 1, column 1",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -63,7 +63,7 @@ fn _0006() {
     let input = ".";
     assert_eq!(
         "missing newline at line 1, column 2",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -73,7 +73,7 @@ fn _0007() {
     let input = ". ";
     assert_eq!(
         "missing newline at line 1, column 3",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -86,7 +86,7 @@ fn _0008() {
             "unexpected character '{}' at line 1, column 1",
             ch.escape_debug()
         );
-        assert_eq!(expected, parse(&input).unwrap_err().to_string());
+        assert_eq!(expected, parse(&input).err().unwrap().to_string());
     }
 }
 
@@ -96,7 +96,7 @@ fn _0009() {
     let input = ".A";
     assert_eq!(
         "missing newline at line 1, column 3",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -106,7 +106,7 @@ fn _0010() {
     let input = ".A ";
     assert_eq!(
         "missing newline at line 1, column 4",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -116,7 +116,7 @@ fn _0011() {
     let input = " .A\n";
     assert_eq!(
         "unexpected character ' ' at line 1, column 1",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -126,7 +126,7 @@ fn _0012() {
     let input = "\t.A\n";
     assert_eq!(
         r"unexpected character '\t' at line 1, column 1",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -138,7 +138,7 @@ fn _0013() {
   ";
     assert_eq!(
         "missing newline at line 3, column 3",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -152,7 +152,7 @@ fn _0014() {
 ";
     assert_eq!(
         "invalid indentation 3, expected a multiple of 4 spaces at line 4, column 4",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -166,7 +166,7 @@ fn _0015() {
 ";
     assert_eq!(
         "invalid indentation 4, expected a multiple of 8 spaces at line 3, column 5",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -176,7 +176,7 @@ fn _0016() {
     let input = ".A\n  .B\n      .C\n";
     assert_eq!(
         "skipped indentation level, jump from level 1 to level 3 at line 3, column 7",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -186,7 +186,7 @@ fn _0017() {
     let input = ".A\n  .B\n.C\n    .D\n";
     assert_eq!(
         "skipped indentation level, jump from level 0 to level 2 at line 4, column 5",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -196,7 +196,7 @@ fn _0018() {
     let input = ".A\n  .B content";
     assert_eq!(
         "missing newline at line 2, column 13",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -206,7 +206,7 @@ fn _0019() {
     let input = ".A\r\n.B";
     assert_eq!(
         "missing newline at line 2, column 3",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -216,7 +216,7 @@ fn _0020() {
     let input = ".A\u{7f}BC abc\n";
     assert_eq!(
         r"unexpected character '\u{7f}' at line 1, column 3",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }
 
@@ -226,6 +226,6 @@ fn _0021() {
     let input = ".a\n  .b\n   .c\n.d\n";
     assert_eq!(
         "invalid indentation 3, expected a multiple of 2 spaces at line 3, column 4",
-        parse(input).unwrap_err().to_string()
+        parse(input).err().unwrap().to_string()
     );
 }

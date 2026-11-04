@@ -1,7 +1,6 @@
 //! # Node implementation
 
 /// Tree node.
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Node<'a> {
     /// Line number where the node starts.
     line: usize,
@@ -54,15 +53,14 @@ impl<'a> Node<'a> {
 
     /// Returns the first child node having the specified name.
     pub fn first_with_name(&self, name: impl AsRef<str>) -> Option<&Self> {
-        self.children.iter().find(|node| node.name == name.as_ref())
+        let name = name.as_ref();
+        self.children.iter().find(|node| node.name == name)
     }
 
     /// Returns the last child node having the specified name.
     pub fn last_with_name(&self, name: impl AsRef<str>) -> Option<&Self> {
-        self.children
-            .iter()
-            .rev()
-            .find(|node| node.name == name.as_ref())
+        let name = name.as_ref();
+        self.children.iter().rev().find(|node| node.name == name)
     }
 
     /// Returns an iterator over child nodes that have the specified name.
