@@ -28,12 +28,16 @@ enum State {
 /// Recognized segment.
 #[derive(Debug)]
 pub struct Segment {
+    line: usize,
     level: usize,
     name: (usize, usize),
     content: (usize, usize),
 }
 
 impl Segment {
+    pub const fn line(&self) -> usize {
+        self.line
+    }
     pub const fn level(&self) -> usize {
         self.level
     }
@@ -118,6 +122,7 @@ impl<'a> Segments<'a> {
         }
         self.level = level;
         Ok(Segment {
+            line: self.indent_line,
             level,
             name: (self.markers.1, self.markers.2),
             content: (self.markers.2, self.markers.3),

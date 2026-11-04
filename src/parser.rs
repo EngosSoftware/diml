@@ -21,20 +21,19 @@ pub fn parse(input: &str) -> Result<Node> {
     let mut stack = vec![(Node::new(0, String::new(), String::new()), 0)];
     for segment in Segments::new(input.char_indices().peekable()) {
         let segment = segment?;
-        let segment_level = segment.level() + 1;
         while stack
             .last()
-            .is_some_and(|(_, level)| *level >= segment_level)
+            .is_some_and(|(_, level)| *level > segment.level())
         {
             append_child(&mut stack);
         }
         stack.push((
             Node::new(
-                1,
+                segment.line(),
                 segment.name(input).to_string(),
                 segment.content(input).to_string(),
             ),
-            segment_level,
+            segment.level() + 1,
         ));
     }
     while stack.len() > 1 {
