@@ -146,7 +146,11 @@ impl Iterator for Segments<'_> {
                             self.mark_delimiter(offset, ch);
                             self.state = State::NodeName;
                         } else {
-                            return Some(Err(DimlError::UnexpectedCharacter(ch, 1, 0)));
+                            return Some(Err(DimlError::UnexpectedCharacter(
+                                ch,
+                                self.line,
+                                self.column,
+                            )));
                         }
                     }
                     None => return Some(Err(DimlError::EmptyInput)),
@@ -275,7 +279,7 @@ mod tests {
     fn _0002() {
         let input = "\n";
         assert_eq!(
-            "unexpected character '\\n' at line 1, column 0",
+            "unexpected character '\\n' at line 1, column 1",
             Segments::new(input.char_indices().peekable())
                 .next()
                 .unwrap()
@@ -288,7 +292,7 @@ mod tests {
     fn _0003() {
         let input = " ";
         assert_eq!(
-            "unexpected character ' ' at line 1, column 0",
+            "unexpected character ' ' at line 1, column 1",
             Segments::new(input.char_indices().peekable())
                 .next()
                 .unwrap()
