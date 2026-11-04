@@ -29,8 +29,8 @@ enum State {
 #[derive(Debug)]
 struct Segment {
     indent: usize,
-    name_markers: (usize, usize),
-    content_markers: (usize, usize),
+    name: (usize, usize),
+    content: (usize, usize),
 }
 
 impl Segment {
@@ -39,11 +39,11 @@ impl Segment {
     }
 
     fn name<'a>(&self, input: &'a str) -> &'a str {
-        &input[self.name_markers.0..self.name_markers.1]
+        &input[self.name.0..self.name.1]
     }
 
     fn content<'a>(&self, input: &'a str) -> &'a str {
-        &input[self.content_markers.0..self.content_markers.1]
+        &input[self.content.0..self.content.1]
     }
 }
 
@@ -67,8 +67,8 @@ struct Segments<'a> {
     next_indent: usize,
     /// Look-ahead indent line.
     next_indent_line: usize,
-    /// Recognized byte offset markers
-    /// (delimiter, name, content, end of segment).
+    /// Recognized byte offset markers for:
+    /// delimiter, name, content, end of segment.
     markers: (usize, usize, usize, usize),
 }
 
@@ -82,9 +82,9 @@ impl<'a> Segments<'a> {
             column: 0,
             delimiter: NULL,
             indent: 0,
-            indent_line: 0,
+            indent_line: 1,
             next_indent: 0,
-            next_indent_line: 0,
+            next_indent_line: 1,
             markers: (0, 0, 0, 0),
         }
     }
@@ -92,8 +92,8 @@ impl<'a> Segments<'a> {
     fn consume_segment(&self) -> Segment {
         Segment {
             indent: self.indent,
-            name_markers: (self.markers.1, self.markers.2),
-            content_markers: (self.markers.2, self.markers.3),
+            name: (self.markers.1, self.markers.2),
+            content: (self.markers.2, self.markers.3),
         }
     }
 
