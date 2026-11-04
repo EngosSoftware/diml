@@ -236,9 +236,9 @@ impl Iterator for Segments<'_> {
                                     self.indent_line = self.next_indent_line;
                                     self.mark_name(offset, ch);
                                     self.state = State::NodeName;
-                                    Some(Ok(segment))
+                                    Ok(segment).into()
                                 }
-                                err => Some(err),
+                                err => err.into(),
                             };
                         }
                         _ => {
