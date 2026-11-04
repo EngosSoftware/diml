@@ -130,17 +130,14 @@ impl<'a> Segments<'a> {
         })
     }
 
-    fn consume_cr(&mut self, offset: usize) {
-        self.mark_end(offset, CR);
-        if let Some((offset, LF)) = self.indices.peek().copied() {
+    fn consume_nl(&mut self, offset: usize, ch: char) {
+        self.mark_end(offset, ch);
+        if ch == CR
+            && let Some((offset, LF)) = self.indices.peek().copied()
+        {
             self.indices.next();
             self.mark_end(offset, LF);
         }
-        self.state = State::LineStart;
-    }
-
-    const fn consume_lf(&mut self, offset: usize) {
-        self.mark_end(offset, LF);
         self.state = State::LineStart;
     }
 
@@ -197,8 +194,7 @@ impl Iterator for Segments<'_> {
                         self.line += 1;
                         self.column = 1;
                         match ch {
-                            CR => self.consume_cr(offset),
-                            LF => self.consume_lf(offset),
+                            CR | LF => self.consume_nl(offset, ch),
                             SP => {
                                 self.next_indent = 1;
                                 self.next_indent_line = self.line;
@@ -219,13 +215,9 @@ impl Iterator for Segments<'_> {
                         }
                     }
                     State::NodeName => match ch {
-                        CR => {
+                        CR | LF => {
                             self.mark_content(offset, ch);
-                            self.consume_cr(offset);
-                        }
-                        LF => {
-                            self.mark_content(offset, ch);
-                            self.consume_lf(offset);
+                            self.consume_nl(offset, ch);
                         }
                         ch if ch.is_whitespace() => {
                             self.mark_content(offset, ch);
@@ -235,8 +227,7 @@ impl Iterator for Segments<'_> {
                         ch => return self.err_unexpected_character(ch).into(),
                     },
                     State::Indentation => match ch {
-                        CR => self.consume_cr(offset),
-                        LF => self.consume_lf(offset),
+                        CR | LF => self.consume_nl(offset, ch),
                         SP => self.next_indent += 1,
                         ch if ch == self.delimiter => {
                             return match self.consume_segment() {
@@ -256,8 +247,7 @@ impl Iterator for Segments<'_> {
                         }
                     },
                     State::NodeContent => match ch {
-                        CR => self.consume_cr(offset),
-                        LF => self.consume_lf(offset),
+                        CR | LF => self.consume_nl(offset, ch),
                         _ => self.mark_end(offset, ch),
                     },
                 }
