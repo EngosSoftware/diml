@@ -28,14 +28,14 @@ enum State {
 /// Recognized segment.
 #[derive(Debug)]
 struct Segment {
-    indent: usize,
+    level: usize,
     name: (usize, usize),
     content: (usize, usize),
 }
 
 impl Segment {
-    fn indent(&self) -> usize {
-        self.indent
+    fn level(&self) -> usize {
+        self.level
     }
 
     fn name<'a>(&self, input: &'a str) -> &'a str {
@@ -69,6 +69,8 @@ struct Segments<'a> {
     next_indent_line: usize,
     /// Number of spaces in the first recognized indentation.
     multiplier: usize,
+    /// Last recognized level.
+    level: usize,
     /// Recognized byte offset markers for:
     /// delimiter, name, content, end of segment.
     markers: (usize, usize, usize, usize),
@@ -88,6 +90,7 @@ impl<'a> Segments<'a> {
             next_indent: 0,
             next_indent_line: 1,
             multiplier: 0,
+            level: 0,
             markers: (0, 0, 0, 0),
         }
     }
@@ -96,8 +99,26 @@ impl<'a> Segments<'a> {
         if self.multiplier == 0 && self.indent > 0 {
             self.multiplier = self.indent;
         }
+        if self.multiplier > 0 && !self.indent.is_multiple_of(self.multiplier) {
+            return Err(DimlError::InvalidIndentation(
+                self.indent,
+                self.multiplier,
+                self.indent_line,
+                self.indent + 1,
+            ));
+        }
+        let level = self.indent.checked_div(self.multiplier).unwrap_or(0);
+        if level > self.level + 1 {
+            return Err(DimlError::SkippedIndentation(
+                self.level,
+                level,
+                self.indent_line,
+                self.indent + 1,
+            ));
+        }
+        self.level = level;
         Ok(Segment {
-            indent: self.indent,
+            level,
             name: (self.markers.1, self.markers.2),
             content: (self.markers.2, self.markers.3),
         })
@@ -176,6 +197,8 @@ impl Iterator for Segments<'_> {
                             ch if ch == self.delimiter => {
                                 return match self.consume_segment() {
                                     Ok(segment) => {
+                                        self.indent = 0;
+                                        self.indent_line = self.line;
                                         self.mark_delimiter(offset, ch);
                                         self.state = State::NodeName;
                                         Some(Ok(segment))
@@ -355,11 +378,47 @@ mod tests {
     }
 
     #[test]
+    fn _0007() {
+        let input = ".A\n  .B\n   .C\n";
+        assert_eq!(
+            "invalid indentation 3, expected a multiple of 2 spaces at line 3, column 4",
+            Segments::new(input.char_indices().peekable())
+                .collect::<Result<Vec<Segment>>>()
+                .unwrap_err()
+                .to_string()
+        );
+    }
+
+    #[test]
+    fn _0008() {
+        let input = ".A\n  .B\n      .C\n";
+        assert_eq!(
+            "skipped indentation level, jump from level 1 to level 3 at line 3, column 7",
+            Segments::new(input.char_indices().peekable())
+                .collect::<Result<Vec<Segment>>>()
+                .unwrap_err()
+                .to_string()
+        );
+    }
+
+    #[test]
+    fn _0009() {
+        let input = ".A\n  .B\n.C\n    .D\n";
+        assert_eq!(
+            "skipped indentation level, jump from level 0 to level 2 at line 4, column 5",
+            Segments::new(input.char_indices().peekable())
+                .collect::<Result<Vec<Segment>>>()
+                .unwrap_err()
+                .to_string()
+        );
+    }
+
+    #[test]
     fn _a0001() {
         let input = ".\n";
         for segment in Segments::new(input.char_indices().peekable()) {
             let segment = segment.unwrap();
-            assert_eq!(0, segment.indent());
+            assert_eq!(0, segment.level());
             assert_eq!("", segment.name(input));
             assert_eq!("\n", segment.content(input));
         }
@@ -456,10 +515,10 @@ mod tests {
             .collect::<Result<Vec<Segment>>>()
             .unwrap();
         assert_eq!(2, segments.len());
-        assert_eq!(0, segments[0].indent());
+        assert_eq!(0, segments[0].level());
         assert_eq!("A", segments[0].name(input));
         assert_eq!(" a\r", segments[0].content(input));
-        assert_eq!(2, segments[1].indent());
+        assert_eq!(1, segments[1].level());
         assert_eq!("B", segments[1].name(input));
         assert_eq!(" b\r", segments[1].content(input));
     }
