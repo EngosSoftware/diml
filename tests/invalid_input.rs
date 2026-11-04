@@ -219,3 +219,13 @@ fn _0020() {
         parse(input).unwrap_err().to_string()
     );
 }
+
+#[test]
+fn _0021() {
+    // Invalid indentation for node c.
+    let input = ".a\n  .b\n   .c\n.d\n";
+    assert_eq!(
+        "invalid indentation 3, expected a multiple of 2 spaces at line 3, column 4",
+        parse(input).unwrap_err().to_string()
+    );
+}

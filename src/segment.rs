@@ -201,12 +201,16 @@ impl Iterator for Segments<'_> {
                                 self.state = State::Indentation;
                             }
                             ch if ch == self.delimiter => {
-                                let segment = self.consume_segment().unwrap(); // safe
-                                self.indent = 0;
-                                self.indent_line = self.line;
-                                self.mark_delimiter(offset, ch);
-                                self.state = State::NodeName;
-                                return Some(Ok(segment));
+                                return match self.consume_segment() {
+                                    Ok(segment) => {
+                                        self.indent = 0;
+                                        self.indent_line = self.line;
+                                        self.mark_delimiter(offset, ch);
+                                        self.state = State::NodeName;
+                                        Ok(segment).into()
+                                    }
+                                    err => err.into(),
+                                };
                             }
                             _ => {
                                 self.mark_end(offset, ch);
