@@ -21,8 +21,6 @@ enum State {
     NodeName,
     /// Inside the node content.
     NodeContent,
-    /// Finished parsing.
-    End,
 }
 
 /// Recognized segment.
@@ -78,6 +76,8 @@ pub struct Segments<'a> {
     /// Recognized byte offset markers for:
     /// delimiter, name, content, end of segment.
     markers: (usize, usize, usize, usize),
+    /// Flag indicating if parsing is finished.
+    finished: bool,
 }
 
 impl<'a> Segments<'a> {
@@ -96,6 +96,7 @@ impl<'a> Segments<'a> {
             multiplier: 0,
             level: 0,
             markers: (0, 0, 0, 0),
+            finished: false,
         }
     }
 
@@ -175,11 +176,14 @@ impl Iterator for Segments<'_> {
     #[expect(clippy::too_many_lines)]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
+            if self.finished {
+                return None;
+            }
             let index = self.indices.next();
             self.column += 1;
-            match self.state {
-                State::Start => match index {
-                    Some((offset, ch)) => {
+            if let Some((offset, ch)) = index {
+                match self.state {
+                    State::Start => {
                         if !ch.is_control() && !ch.is_whitespace() {
                             self.delimiter = ch;
                             self.mark_delimiter(offset, ch);
@@ -188,13 +192,10 @@ impl Iterator for Segments<'_> {
                             return self.err_unexpected_character(ch).into();
                         }
                     }
-                    None => return self.err_empty_input().into(),
-                },
-                State::LineStart => {
-                    self.line += 1;
-                    self.column = 1;
-                    match index {
-                        Some((offset, ch)) => match ch {
+                    State::LineStart => {
+                        self.line += 1;
+                        self.column = 1;
+                        match ch {
                             CR => self.consume_cr(offset),
                             LF => self.consume_lf(offset),
                             SP => {
@@ -214,15 +215,9 @@ impl Iterator for Segments<'_> {
                                 self.mark_end(offset, ch);
                                 self.state = State::NodeContent;
                             }
-                        },
-                        None => {
-                            self.state = State::End;
-                            return self.consume_segment().into();
                         }
                     }
-                }
-                State::NodeName => match index {
-                    Some((offset, ch)) => match ch {
+                    State::NodeName => match ch {
                         CR => {
                             self.mark_content(offset, ch);
                             self.consume_cr(offset);
@@ -240,10 +235,7 @@ impl Iterator for Segments<'_> {
                         ch if !ch.is_control() => self.mark_content(offset, ch),
                         ch => return self.err_unexpected_character(ch).into(),
                     },
-                    None => return self.err_missing_newline().into(),
-                },
-                State::Indentation => match index {
-                    Some((offset, ch)) => match ch {
+                    State::Indentation => match ch {
                         CR => {
                             self.consume_cr(offset);
                             self.state = State::LineStart;
@@ -270,26 +262,27 @@ impl Iterator for Segments<'_> {
                             self.state = State::NodeContent;
                         }
                     },
-                    None => return self.err_missing_newline().into(),
-                },
-                State::NodeContent => {
-                    if let Some((offset, ch)) = index {
-                        match ch {
-                            CR => {
-                                self.consume_cr(offset);
-                                self.state = State::LineStart;
-                            }
-                            LF => {
-                                self.consume_lf(offset);
-                                self.state = State::LineStart;
-                            }
-                            _ => self.mark_end(offset, ch),
+                    State::NodeContent => match ch {
+                        CR => {
+                            self.consume_cr(offset);
+                            self.state = State::LineStart;
                         }
-                    } else {
-                        return self.err_missing_newline().into();
-                    }
+                        LF => {
+                            self.consume_lf(offset);
+                            self.state = State::LineStart;
+                        }
+                        _ => self.mark_end(offset, ch),
+                    },
                 }
-                State::End => return None,
+            } else {
+                return match self.state {
+                    State::Start => self.err_empty_input().into(),
+                    State::LineStart => {
+                        self.finished = true;
+                        self.consume_segment().into()
+                    }
+                    _ => self.err_missing_newline().into(),
+                };
             }
         }
     }
