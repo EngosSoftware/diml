@@ -1,13 +1,19 @@
+.note To use task definitions, run:
+      `cargo install taskcmd`
+
 .vars
   .RUST_TOOLCHAIN +stable
 
 .tasks
 
   .all
+    .task fmt
     .task clean
     .task build
     .task clippy
+    .task pedantic
     .task test
+    .task doc
     .task cov
 
   .build
@@ -20,7 +26,7 @@
 
   .clippy
     .desc Runs clippy for all targets
-    .cmd cargo {{RUST_TOOLCHAIN}} clippy --all-targets
+    .cmd cargo {{RUST_TOOLCHAIN}} clippy --all-targets -- -D warnings
 
   .cov
     .desc Generates code coverage report in text format
@@ -28,6 +34,11 @@
     .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov --no-cfg-coverage
 
   .cov-html
+    .desc Generates code coverage report in HTML format
+    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov clean
+    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov --no-cfg-coverage --html
+
+  .cov-html-open
     .desc Generates code coverage report in HTML format
     .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov clean
     .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov --no-cfg-coverage --html --open
@@ -60,6 +71,16 @@
   .musl
     .desc Builds in debug mode
     .cmd cargo {{RUST_TOOLCHAIN}} build --release --target=x86_64-unknown-linux-musl
+
+  .pedantic
+    .desc Runs pedantic clippy for all targets
+    .cmd cargo {{RUST_TOOLCHAIN}} clippy --all-targets -- -D warnings -W clippy::pedantic -W clippy::nursery
+
+  .readme
+    .desc Recreates README.md file
+          Updates the README.md file and code coverage.
+    .cmd magg readme
+    .task cov-badge
 
   .test
     .desc Runs tests in debug mode

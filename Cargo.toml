@@ -2,24 +2,19 @@
 name = "diml"
 version = "0.2.0"
 authors = ["Dariusz Depta <depta@engos.de>"]
-description = "Delimiter-Indented Markup Language (DIML) parser"
+description = "DIML parser"
 documentation = "https://docs.rs/diml"
 repository = "https://github.com/EngosSoftware/diml.git"
 keywords = ["delimiter", "indented", "markup", "language", "parser"]
-categories = ["encoding"]
+categories = ["encoding", "text-processing"]
+rust-version = "1.87.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
-rust-version = "1.87.0"
 include = [
-    "docs/**",
     "src/**",
-    "tests/**",
+    "docs/*.rs.md",
     "Cargo.lock",
     "Cargo.toml",
     "LICENSE*",
-    "NOTICE",
-    "/README.md"
+    "README.md"
 ]
-
-[dependencies]
-normalized-line-endings = "1.0.14"
