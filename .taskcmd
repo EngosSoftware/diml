@@ -1,3 +1,6 @@
+.note To use task definitions, run:
+      `cargo install taskcmd`
+
 .vars
   .RUST_TOOLCHAIN +stable
 
@@ -72,6 +75,12 @@
   .pedantic
     .desc Runs pedantic clippy for all targets
     .cmd cargo {{RUST_TOOLCHAIN}} clippy --all-targets -- -D warnings -W clippy::pedantic -W clippy::nursery
+
+  .readme
+    .desc Recreates README.md file
+          Updates the README.md file and code coverage.
+    .cmd magg readme
+    .task cov-badge
 
   .test
     .desc Runs tests in debug mode

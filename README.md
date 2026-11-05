@@ -12,7 +12,7 @@
 [build-badge]: https://github.com/EngosSoftware/diml/actions/workflows/build.yml/badge.svg
 [docs-badge]: https://docs.rs/diml/badge.svg
 [docs-url]: https://docs.rs/diml
-[cov-badge]: https://img.shields.io/badge/coverage-0%25-21B577.svg
+[cov-badge]: https://img.shields.io/badge/cov-100%25-21b577.svg
 [license-badge]: https://img.shields.io/badge/license-MIT_OR_Apache--2.0-9370DB.svg
 [human-badge]: https://img.shields.io/badge/made_by-HUMAN-F5DEB3.svg
 
