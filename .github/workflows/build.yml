@@ -9,7 +9,7 @@ on:
   pull_request:
 
 env:
-  RUST_TOOLCHAIN: 1.87.0
+  RUST_TOOLCHAIN: 1.88.0
 
 jobs:
   build:
