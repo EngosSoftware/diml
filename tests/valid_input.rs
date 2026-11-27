@@ -6,6 +6,7 @@ fn _0001() {
     assert_eq!(0, doc.line());
     assert_eq!("", doc.name());
     assert_eq!("", doc.content());
+    assert_eq!("", doc.value());
     assert_eq!(1, doc.children().len());
 }
 
@@ -18,6 +19,7 @@ fn _0002() {
     assert_eq!(1, node.line());
     assert_eq!("", node.name());
     assert_eq!("\n", node.content());
+    assert_eq!("", node.value());
     assert_eq!(0, node.children().len());
 }
 
@@ -32,17 +34,19 @@ fn _0003() {
         let node = doc.children().next().unwrap();
         assert_eq!("", node.name());
         assert_eq!(&input[1..], node.content());
+        assert_eq!("", node.value());
     }
 }
 
 #[test]
 fn _0004() {
-    let input = "- node content\n";
+    let input = "- node value\n";
     let doc = parse(input).unwrap();
     assert_eq!(1, doc.children().count());
     let node = doc.children().next().unwrap();
     assert_eq!("", node.name());
-    assert_eq!(" node content\n", node.content());
+    assert_eq!(" node value\n", node.content());
+    assert_eq!("node value", node.value());
 }
 
 #[test]
@@ -53,6 +57,7 @@ fn _0005() {
     let node = doc.children().next().unwrap();
     assert_eq!("a", node.name());
     assert_eq!("\n", node.content());
+    assert_eq!("", node.value());
 }
 
 #[test]
@@ -63,6 +68,7 @@ fn _0006() {
     let node = doc.children().next().unwrap();
     assert_eq!("a", node.name());
     assert_eq!("\r\n", node.content());
+    assert_eq!("", node.value());
 }
 
 #[test]
@@ -73,6 +79,7 @@ fn _0007() {
     let node = doc.children().next().unwrap();
     assert_eq!("b", node.name());
     assert_eq!("\n", node.content());
+    assert_eq!("", node.value());
 }
 
 #[test]
@@ -83,6 +90,7 @@ fn _0008() {
     let node = doc.children().next().unwrap();
     assert_eq!("a", node.name());
     assert_eq!(" b\n", node.content());
+    assert_eq!("b", node.value());
 }
 
 #[test]
@@ -93,6 +101,7 @@ fn _0009() {
     let node = doc.children().next().unwrap();
     assert_eq!("a", node.name());
     assert_eq!("\nb\n", node.content());
+    assert_eq!("b", node.value());
 }
 
 #[test]
@@ -103,6 +112,7 @@ fn _0010() {
     let node = doc.children().next().unwrap();
     assert_eq!("a", node.name());
     assert_eq!("\rb\n", node.content());
+    assert_eq!("b", node.value());
 }
 
 #[test]
@@ -113,6 +123,7 @@ fn _0011() {
     let node = doc.children().next().unwrap();
     assert_eq!("a", node.name());
     assert_eq!("\r\nb\n", node.content());
+    assert_eq!("b", node.value());
 }
 
 #[test]
@@ -123,6 +134,7 @@ fn _0012() {
     let node = doc.children().next().unwrap();
     assert_eq!("a", node.name());
     assert_eq!("\tb\n", node.content());
+    assert_eq!("b", node.value());
 }
 
 #[test]
@@ -133,6 +145,7 @@ fn _0013() {
     let node = doc.children().next().unwrap();
     assert_eq!("A", node.name());
     assert_eq!("\n", node.content());
+    assert_eq!("", node.value());
 }
 
 #[test]
@@ -143,6 +156,7 @@ fn _0014() {
     let node = doc.children().next().unwrap();
     assert_eq!("A", node.name());
     assert_eq!("\n  \n", node.content());
+    assert_eq!("", node.value());
 }
 
 #[test]
@@ -153,6 +167,7 @@ fn _0015() {
     let node = doc.children().next().unwrap();
     assert_eq!("A", node.name());
     assert_eq!("\n  \r", node.content());
+    assert_eq!("", node.value());
 }
 
 #[test]
@@ -163,6 +178,7 @@ fn _0016() {
     let node = doc.children().next().unwrap();
     assert_eq!("A", node.name());
     assert_eq!("\n  \r\n", node.content());
+    assert_eq!("", node.value());
 }
 
 #[test]
@@ -173,6 +189,7 @@ fn _0017() {
     let node = doc.children().next().unwrap();
     assert_eq!("_this_is-some_funny-name", node.name());
     assert_eq!("\n", node.content());
+    assert_eq!("", node.value());
 }
 
 #[test]
@@ -183,6 +200,7 @@ fn _0018() {
     let node = doc.children().next().unwrap();
     assert_eq!("z", node.name());
     assert_eq!("\n", node.content());
+    assert_eq!("", node.value());
 }
 
 #[test]
@@ -193,6 +211,7 @@ fn _0019() {
     let node = doc.children().next().unwrap();
     assert_eq!("A1", node.name());
     assert_eq!("\n", node.content());
+    assert_eq!("", node.value());
 }
 
 #[test]
@@ -203,9 +222,11 @@ fn _0020() {
     let first = children.next().unwrap();
     assert_eq!("A", first.name());
     assert_eq!("\n", first.content());
+    assert_eq!("", first.value());
     let second = children.next().unwrap();
     assert_eq!("k", second.name());
     assert_eq!("\n", second.content());
+    assert_eq!("", second.value());
     assert!(children.next().is_none());
 }
 
@@ -217,9 +238,11 @@ fn _0021() {
     let first = children.next().unwrap();
     assert_eq!("x", first.name());
     assert_eq!("\n", first.content());
+    assert_eq!("", first.value());
     let second = children.next().unwrap();
     assert_eq!("_", second.name());
     assert_eq!("\n", second.content());
+    assert_eq!("", second.value());
     assert!(children.next().is_none());
 }
 
@@ -231,9 +254,11 @@ fn _0022() {
     let first = children.next().unwrap();
     assert_eq!("n", first.name());
     assert_eq!("\n", first.content());
+    assert_eq!("", first.value());
     let second = first.children().next().unwrap();
     assert_eq!("_", second.name());
     assert_eq!("\n", second.content());
+    assert_eq!("", second.value());
     assert!(children.next().is_none());
 }
 
@@ -245,6 +270,7 @@ fn _0023() {
     let first = children.next().unwrap();
     assert_eq!("A", first.name());
     assert_eq!("\n$B\n", first.content());
+    assert_eq!("$B", first.value());
     assert!(children.next().is_none());
 }
 
@@ -262,13 +288,16 @@ fn _0024() {
     let first = children.next().unwrap();
     assert_eq!("A", first.name());
     assert_eq!("\n\n  some content\n\n", first.content());
+    assert_eq!("some content", first.value());
     let mut children = first.children();
     let second = children.next().unwrap();
     assert_eq!("B", second.name());
     assert_eq!("\n", second.content());
+    assert_eq!("", second.value());
     let third = children.next().unwrap();
     assert_eq!("C", third.name());
     assert_eq!("\n", third.content());
+    assert_eq!("", third.value());
 }
 
 #[test]
@@ -283,13 +312,16 @@ fn _0025() {
     let node_a = doc.children().next().unwrap();
     assert_eq!("A", node_a.name());
     assert_eq!(" a\n", node_a.content());
+    assert_eq!("a", node_a.value());
     let mut children = node_a.children();
     let node_b = children.next().unwrap();
     assert_eq!("B", node_b.name());
     assert_eq!(" b\n  \n", node_b.content());
+    assert_eq!("b", node_b.value());
     let node_c = children.next().unwrap();
     assert_eq!("C", node_c.name());
     assert_eq!(" c\n", node_c.content());
+    assert_eq!("c", node_c.value());
 }
 
 #[test]
@@ -301,20 +333,24 @@ fn _0026() {
     let node = doc.children().next().unwrap();
     assert_eq!("A", node.name());
     assert_eq!(" ab\u{7f}cd\n", node.content());
+    assert_eq!("ab\u{7f}cd", node.value());
 }
 
 #[test]
 fn _0027() {
-    // Node name and content should live longer than a doc and node.
+    // Node name and content and value should live longer than a doc and node.
     let input = ".A ab\n";
     let name;
     let content;
+    let value;
     {
         let doc = parse(input).unwrap();
         let node = doc.children().next().unwrap();
         name = node.name();
         content = node.content();
+        value = node.value();
     }
     assert_eq!("A", name);
     assert_eq!(" ab\n", content);
+    assert_eq!("ab", value);
 }
