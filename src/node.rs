@@ -41,6 +41,14 @@ impl<'a> Node<'a> {
         self.content
     }
 
+    /// Returns the node value.
+    ///
+    /// Calling `value()` is an equivalent of calling `content().trim()`.
+    #[must_use]
+    pub fn value(&self) -> &'a str {
+        self.content.trim()
+    }
+
     /// Adds a child node at the end of the children list.
     pub(crate) fn add_child(&mut self, node: Self) {
         self.children.push(node);
