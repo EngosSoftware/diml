@@ -46,7 +46,7 @@
   .cov-badge
     .desc Generates the detailed code coverage badge
     .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov clean
-    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov --no-cfg-coverage --json --summary-only | coverio --collapse --tag cov-badge
+    .cmd cargo {{RUST_TOOLCHAIN}} llvm-cov --no-cfg-coverage --json --summary-only | coverio --tag cov-badge
 
   .doc
     .desc Generates documentation
